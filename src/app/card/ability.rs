@@ -12,3 +12,11 @@ pub(crate) enum Ability {
     #[strum(to_string = "{0}")]
     ScoreChanging(ScoreModifier),
 }
+impl Ability {
+    pub(crate) fn is_swap(&self) -> bool {
+        match self {
+            Ability::Swap => true,
+            _ => false,
+        }
+    }
+}

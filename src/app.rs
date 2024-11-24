@@ -2,23 +2,22 @@ mod card;
 mod display;
 mod field;
 mod player;
+mod season;
 mod wins;
 
 use rand::prelude::*;
-use strum_macros::Display;
 
 use card::{AffectedCards, Card, Op, Rune, Score};
 use field::Spot;
 use player::{Deck, Player};
+pub(crate) use season::Season;
 use wins::*;
 
-#[derive(Clone, Copy, Display, PartialEq, Debug)]
-pub enum Season {
-    Spring,
-    Summer,
-    Autumn,
-    Winter,
-    Ferric,
+struct Play {
+    pub player_turn: usize,
+    pub played_field: usize,
+    pub card_index: usize,
+    pub spot: Spot,
 }
 
 pub struct App {
@@ -43,7 +42,7 @@ impl App {
             .zip(decks.into_iter())
             .for_each(|(p, d)| p.set_deck(d));
         let win = self.game_loop();
-        display::game_over(win);
+        display::game_over(self.players[win.player_idx].season(), win.condition);
     }
     fn game_loop(&mut self) -> Win {
         let mut first_player = 0usize;
@@ -93,20 +92,19 @@ impl App {
             }
             player.shuffle_deck();
         }
-        todo!();
+
+        display::round_over(self.players[winner].season(), win.condition);
     }
     fn play_round(&mut self, first_player: usize) -> Win {
-        let num_players = self.players.len() as usize;
+        let num_players = self.players.len();
         assert!(first_player < num_players);
         self.init_round();
         let mut player_turn = first_player;
         loop {
-            let player = &self.players[player_turn as usize];
-            let card = self.select_card(player.hand());
-            let (player_idx, spot) = self.select_spot(&card);
-            self.do_play(&card, &spot, player_turn);
+            let play = display::select_play(player_turn, &self.players);
+            self.execute_play(&play);
 
-            if let Some(win) = self.check_win(player_idx, &card, &spot) {
+            if let Some(win) = self.check_win(&play) {
                 return win;
             }
             player_turn = (player_turn + 1) % num_players;
@@ -119,21 +117,28 @@ impl App {
         }
     }
 
-    fn select_card(&self, hand: &Vec<Card>) -> Card {
-        todo!();
+    fn execute_play(&mut self, play: &Play) {
+        let card = self.players[play.player_turn].take_from_hand(play.card_index);
+        let other_card = self.players[play.played_field].play_card(card, play.spot);
+        if let Some(c) = other_card {
+            self.players[play.player_turn].add_to_hand(c);
+        }
     }
-    fn select_spot(&self, card: &Card) -> (usize, Spot) {
-        todo!();
-    }
-    fn do_play(&mut self, card: &Card, spot: &Spot, player_turn: usize) {}
-    fn check_win(&self, player_idx: usize, card: &Card, spot: &Spot) -> Option<Win> {
-        let player = &self.players[player_idx as usize];
+    fn check_win(&self, play: &Play) -> Option<Win> {
+        let player = &self.players[play.played_field];
+        let player_idx = play.played_field;
+        let spot = play.spot;
+        let card = player
+            .field()
+            .get(play.spot)
+            .as_ref()
+            .expect("Should be a card here from excuting play");
 
         if card.season() == player.season() {
             let field_in_season = player.field().clone_in_season(player.season());
 
             // If there is a win condition on the in-season field, then it is a game win
-            let opt_win_cond = check_win(&field_in_season, spot, card);
+            let opt_win_cond = check_win(&field_in_season, &spot, card);
             if let Some(condition) = opt_win_cond {
                 return Some(Win {
                     player_idx,
@@ -143,7 +148,7 @@ impl App {
             }
         }
 
-        let opt_win_cond = check_win(player.field(), spot, card);
+        let opt_win_cond = check_win(player.field(), &spot, card);
         if let Some(condition) = opt_win_cond {
             let game_won =
                 check_two_ancients_house_rule(&player.field().court, &condition, player.season());
@@ -156,9 +161,4 @@ impl App {
             None
         }
     }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
 }

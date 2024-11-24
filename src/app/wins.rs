@@ -1,3 +1,5 @@
+use strum_macros::Display;
+
 use crate::app::card::Score;
 
 use super::{
@@ -12,7 +14,7 @@ pub struct Win {
     pub game_won: bool,
     pub condition: WinCondition,
 }
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Display)]
 pub enum WinCondition {
     CountCountess([Spot; 2]),
     ThreeInCourt([Spot; 3]),
@@ -28,7 +30,7 @@ pub fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCondition
             None
         };
     }
-    if *spot.row() == Row::Court {
+    if *spot.row() == Row::Garden {
         return if check_fourty_points(field) {
             Some(WinCondition::FourtyPoints)
         } else {
@@ -204,6 +206,9 @@ fn count_points_in_row(row: &RowOfCards, card_score_fn: fn(&Card) -> Score) -> i
             }
         }
     }
+    for s in scores {
+        total += s;
+    }
 
     let multiplier = row
         .iter()
@@ -223,5 +228,6 @@ fn count_points_in_row(row: &RowOfCards, card_score_fn: fn(&Card) -> Score) -> i
         })
         .reduce(|acc, el| acc * el)
         .unwrap();
+
     total * multiplier
 }

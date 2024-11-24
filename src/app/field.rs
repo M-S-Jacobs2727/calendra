@@ -1,3 +1,7 @@
+use std::fmt::Display;
+
+use strum_macros::Display;
+
 use super::{card::Card, Season};
 
 pub type RowOfCards = [Option<Card>; 5];
@@ -45,7 +49,7 @@ impl Field {
         field_in_season
     }
 }
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, Display, PartialEq, Debug)]
 pub enum Row {
     Garden,
     Court,
@@ -73,5 +77,10 @@ impl Spot {
     }
     pub fn row(&self) -> &Row {
         &self.row
+    }
+}
+impl Display for Spot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        format!("{} {}", self.row, self.place + 1).fmt(f)
     }
 }

@@ -2,7 +2,7 @@ use strum_macros::Display;
 
 use super::{
     score::{AffectedCards, Op, ScoreModifier},
-    Ability, Score,
+    Ability,
 };
 #[derive(Clone, Copy, Debug, PartialEq, Display)]
 pub(crate) enum Rune {
@@ -25,16 +25,31 @@ impl Rune {
             Rune::Ancient => Ability::Ancient,
             Rune::Changeling | Rune::Mist | Rune::Plague => Ability::Swap,
             Rune::Archer | Rune::Warrior => Ability::AntiSwap,
-            Rune::Queen | Rune::Magician => Ability::AntiPlague,
+            Rune::Queen | Rune::Magician | Rune::Weather => Ability::AntiPlague,
             Rune::Beast => Ability::NoWeather,
             Rune::Count | Rune::Countess => Ability::ScoreChanging(ScoreModifier {
                 op: Op::Add(1),
                 affected: AffectedCards::Adjacent,
             }),
-            Rune::Weather => Ability::ScoreChanging(ScoreModifier {
-                op: Op::Mult(2),
-                affected: AffectedCards::Row,
-            }),
+        }
+    }
+}
+impl From<&str> for Rune {
+    fn from(value: &str) -> Self {
+        match value {
+            "Ancient" => Rune::Ancient,
+            "Archer" => Rune::Archer,
+            "Beast" => Rune::Beast,
+            "Changeling" => Rune::Changeling,
+            "Count" => Rune::Count,
+            "Countess" => Rune::Countess,
+            "Magician" => Rune::Magician,
+            "Mist" => Rune::Mist,
+            "Plague" => Rune::Plague,
+            "Queen" => Rune::Queen,
+            "Warrior" => Rune::Warrior,
+            "Weather" => Rune::Weather,
+            _ => panic!("Invalid rune: {}", value),
         }
     }
 }

@@ -10,8 +10,9 @@ use std::{
 };
 
 use super::Season;
-use ability::Ability;
+pub(crate) use ability::Ability;
 pub(crate) use rune::Rune;
+use score::ScoreModifier;
 pub(crate) use score::{AffectedCards, Op, Score};
 
 // The output is wrapped in a Result to allow matching on errors.
@@ -92,6 +93,13 @@ impl Card {
     pub fn garden_score(&self) -> Score {
         self.garden_score
     }
+
+    pub(crate) fn to_text(&self) -> String {
+        format!(
+            "{} {} {}/{}",
+            self.season, self.rune, self.garden_score, self.court_score
+        )
+    }
 }
 impl Display for Card {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -100,5 +108,99 @@ impl Display for Card {
             self.season, self.rune, self.garden_score, self.court_score
         )
         .fmt(f)
+    }
+}
+impl From<String> for Card {
+    fn from(value: String) -> Self {
+        let words: Vec<&str> = value.split(' ').collect();
+        assert!(words.len() == 3 || words.len() == 2);
+        let season: Season = words[0].into();
+        let rune: Rune = words[1].into();
+        let (garden_score, court_score) = if words.len() == 3 {
+            let scores: Vec<&str> = words[2].split('/').collect();
+            assert_eq!(scores.len(), 2, "Should be two scores (garden and court)");
+            (scores[0].into(), scores[1].into())
+        } else {
+            let is_ferric = season == Season::Ferric;
+            match rune {
+                Rune::Ancient => {
+                    if is_ferric {
+                        (Score::Value(12), Score::Value(12))
+                    } else {
+                        (Score::Value(10), Score::Value(10))
+                    }
+                }
+                Rune::Changeling => {
+                    if is_ferric {
+                        (Score::Value(2), Score::Value(2))
+                    } else {
+                        (Score::Value(1), Score::Value(1))
+                    }
+                }
+                Rune::Count => {
+                    if is_ferric {
+                        (Score::Value(9), Score::Value(9))
+                    } else {
+                        (Score::Value(8), Score::Value(8))
+                    }
+                }
+                Rune::Countess => {
+                    if is_ferric {
+                        (Score::Value(10), Score::Value(10))
+                    } else {
+                        (Score::Value(9), Score::Value(9))
+                    }
+                }
+                Rune::Mist => {
+                    if is_ferric {
+                        (
+                            Score::Mod(ScoreModifier {
+                                op: Op::Add(-1),
+                                affected: AffectedCards::Row,
+                            }),
+                            Score::Mod(ScoreModifier {
+                                op: Op::Add(-1),
+                                affected: AffectedCards::Row,
+                            }),
+                        )
+                    } else {
+                        panic!("Non-Ferric Mist should not exist!")
+                    }
+                }
+                Rune::Plague => (
+                    Score::Mod(ScoreModifier {
+                        op: Op::Mult(0),
+                        affected: AffectedCards::Row,
+                    }),
+                    Score::Mod(ScoreModifier {
+                        op: Op::Mult(0),
+                        affected: AffectedCards::Row,
+                    }),
+                ),
+                Rune::Weather => {
+                    if is_ferric {
+                        panic!("Ferric Weather should not exist!")
+                    } else {
+                        (
+                            Score::Mod(ScoreModifier {
+                                op: Op::Mult(2),
+                                affected: AffectedCards::Row,
+                            }),
+                            Score::Mod(ScoreModifier {
+                                op: Op::Mult(2),
+                                affected: AffectedCards::Row,
+                            }),
+                        )
+                    }
+                }
+                _ => panic!("Must provide a score string for {rune}"),
+            }
+        };
+        Self {
+            season,
+            rune,
+            court_score,
+            garden_score,
+        }
     }
 }

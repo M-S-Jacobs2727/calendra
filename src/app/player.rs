@@ -1,6 +1,10 @@
 use rand::seq::SliceRandom;
 
-use super::{card::Card, field::Field, Season};
+use super::{
+    card::Card,
+    field::{Field, Row, Spot},
+    Season,
+};
 
 pub type Deck = Vec<Card>;
 pub type Hand = Vec<Card>;
@@ -28,9 +32,9 @@ impl Player {
     }
 
     // Getters
-    pub fn deck(&self) -> &Vec<Card> {
-        &self.deck
-    }
+    // pub fn deck(&self) -> &Vec<Card> {
+    //     &self.deck
+    // }
     pub fn hand(&self) -> &Vec<Card> {
         &self.hand
     }
@@ -99,5 +103,16 @@ impl Player {
     }
     pub(crate) fn shuffle_deck(&mut self) {
         self.deck.shuffle(&mut rand::thread_rng());
+    }
+    pub(crate) fn take_from_hand(&mut self, card_index: usize) -> Card {
+        self.hand.remove(card_index)
+    }
+    pub(crate) fn play_card(&mut self, card: Card, spot: Spot) -> Option<Card> {
+        let old_card = match spot.row() {
+            Row::Garden => self.field.garden[spot.place()].take(),
+            Row::Court => self.field.court[spot.place()].take(),
+        };
+        self.field.set(Some(card), spot);
+        old_card
     }
 }

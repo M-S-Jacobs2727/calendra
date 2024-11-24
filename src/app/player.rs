@@ -28,9 +28,6 @@ impl Player {
     }
 
     // Getters
-    // pub fn deck(&self) -> &Vec<Card> {
-    //     &self.deck
-    // }
     pub(crate) fn hand(&self) -> &Vec<Card> {
         &self.hand
     }

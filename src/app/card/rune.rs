@@ -29,22 +29,3 @@ impl Rune {
         }
     }
 }
-impl From<&str> for Rune {
-    fn from(value: &str) -> Self {
-        match value {
-            "Ancient" => Rune::Ancient,
-            "Archer" => Rune::Archer,
-            "Beast" => Rune::Beast,
-            "Changeling" => Rune::Changeling,
-            "Count" => Rune::Count,
-            "Countess" => Rune::Countess,
-            "Magician" => Rune::Magician,
-            "Mist" => Rune::Mist,
-            "Plague" => Rune::Plague,
-            "Queen" => Rune::Queen,
-            "Warrior" => Rune::Warrior,
-            "Weather" => Rune::Weather,
-            _ => panic!("Invalid rune: {}", value),
-        }
-    }
-}

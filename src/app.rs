@@ -101,6 +101,7 @@ impl App {
         self.init_round();
         let mut player_turn = first_player;
         loop {
+            display::next_player(self.players[player_turn].season());
             let play = display::select_play(player_turn, &self.players);
             self.execute_play(&play);
 

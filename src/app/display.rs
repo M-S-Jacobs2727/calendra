@@ -115,7 +115,10 @@ pub(crate) fn round_over(winner_season: Season, condition: WinCondition) {
     println!("{} player: when you are ready, press enter.", winner_season);
     Confirm::new("").prompt().expect("Should confirm...");
 }
-
+pub(crate) fn next_player(season: Season) {
+    let message = format!("{} player, press enter to start your turn.", season);
+    Confirm::new(&message).prompt().expect("Cancelled");
+}
 fn show_title(title: &str) {
     let word = format!(" {title} ");
 

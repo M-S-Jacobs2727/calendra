@@ -66,6 +66,8 @@ impl App {
     }
     fn complete_round(&mut self, win: Win) {
         let winner = win.player_idx;
+        display::round_over(self.players[winner].season(), win.condition);
+
         let prizes: Vec<&Card> = self
             .players
             .iter()
@@ -92,8 +94,6 @@ impl App {
             }
             player.shuffle_deck();
         }
-
-        display::round_over(self.players[winner].season(), win.condition);
     }
     fn play_round(&mut self, first_player: usize) -> Win {
         let num_players = self.players.len();

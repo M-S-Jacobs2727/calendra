@@ -100,8 +100,7 @@ pub(crate) fn choose_prize(winner: usize, prizes: Vec<&Card>, seasons: Vec<Seaso
     Select::new("Which prize will you take?", options)
         .raw_prompt()
         .expect("Should make a choice.")
-        .index;
-    todo!()
+        .index
 }
 pub(crate) fn game_over(winner_season: Season, condition: WinCondition) {
     println!("{} player wins the game with {}!", winner_season, condition);

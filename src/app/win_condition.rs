@@ -1,13 +1,6 @@
 use strum_macros::Display;
 
-use super::{AffectedCards, Card, Field, Op, Row, RowOfCards, Rune, Score, Season, Spot};
-
-#[derive(PartialEq, Debug)]
-pub(crate) struct Win {
-    pub(crate) player_idx: usize,
-    pub(crate) game_won: bool,
-    pub(crate) condition: WinCondition,
-}
+use super::{Card, Field, Row, RowOfCards, RowScoreModifier, Rune, Score, Season, Spot};
 
 #[derive(PartialEq, Debug, Display)]
 pub(crate) enum WinCondition {
@@ -207,44 +200,25 @@ fn count_points_in_row(row: &RowOfCards, card_score_fn: fn(&Card) -> Score) -> i
         }
     }
     for i in 0..5usize {
-        if let Some(c) = row[i].as_ref() {
-            if let Score::Mod(sm) = card_score_fn(c) {
-                match (sm.op, sm.affected) {
-                    (Op::Add(a), AffectedCards::Adjacent) => {
-                        if i > 0 && row[i - 1].is_some_and(|c| card_score_fn(&c).is_value()) {
-                            scores[i - 1] += a;
-                        }
-                        if i < 4 && row[i + 1].is_some_and(|c| card_score_fn(&c).is_value()) {
-                            scores[i + 1] += a
-                        }
-                    }
-                    (Op::Add(a), AffectedCards::Row) => {
-                        total += a * num_cards as i32;
-                    }
-                    _ => {}
-                }
+        if let Some(card) = row[i].as_ref() {
+            if let Score::Mod(RowScoreModifier::Add(value)) = card_score_fn(card) {
+                total += value * num_cards as i32;
             }
         }
     }
+
     for s in scores {
         total += s;
     }
 
     let multiplier = row
         .iter()
-        .map(|c| {
-            if let Some(card) = c.as_ref() {
-                if let Score::Mod(sm) = card_score_fn(card) {
-                    match (sm.op, sm.affected) {
-                        (Op::Mult(m), AffectedCards::Row) => m,
-                        _ => 1,
-                    }
-                } else {
-                    1
-                }
-            } else {
-                1
-            }
+        .map(|card| match card {
+            Some(card) => match card_score_fn(card) {
+                Score::Mod(RowScoreModifier::Mult(value)) => value,
+                _ => 1,
+            },
+            None => 1,
         })
         .reduce(|acc, el| acc * el)
         .unwrap();
@@ -257,7 +231,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_two_plagues() {
+    fn test_two_plagues_meets_win_condition() {
         let mut field = Field::new();
         let card = Card::create_plague(Season::Autumn);
 
@@ -277,7 +251,7 @@ mod test {
     }
 
     #[test]
-    fn test_two_countesses_no_win() {
+    fn test_two_countesses_gives_no_win_condition() {
         let card1 = Card::create_countess(Season::Autumn);
         let card2 = Card::create_countess(Season::Ferric);
         let spot1 = Spot::new(Row::Court, 0);
@@ -292,7 +266,7 @@ mod test {
     }
 
     #[test]
-    fn test_two_counts_no_win() {
+    fn test_two_counts_gives_no_win_condition() {
         let card1 = Card::create_count(Season::Autumn);
         let card2 = Card::create_count(Season::Ferric);
         let spot1 = Spot::new(Row::Court, 0);
@@ -304,5 +278,24 @@ mod test {
 
         let wc = check_win(&field, &spot1, &card1);
         assert!(wc.is_none());
+    }
+
+    #[test]
+    fn test_count_and_countess_gives_win_condition() {
+        let card1 = Card::create_count(Season::Autumn);
+        let card2 = Card::create_countess(Season::Ferric);
+        let spot1 = Spot::new(Row::Court, 0);
+        let spot2 = Spot::new(Row::Court, 1);
+
+        let mut field = Field::new();
+        field.set(Some(card1), spot1);
+        field.set(Some(card2), spot2);
+
+        let wc = check_win(&field, &spot1, &card1);
+        assert!(wc.is_some());
+        assert!(match wc.unwrap() {
+            WinCondition::CountCountess(_) => true,
+            _ => false,
+        });
     }
 }

@@ -1,6 +1,6 @@
 use strum_macros::Display;
 
-use super::{Ability, AffectedCards, Op, ScoreModifier};
+use super::Ability;
 
 #[derive(Clone, Copy, Debug, PartialEq, Display)]
 pub(crate) enum Rune {
@@ -25,10 +25,7 @@ impl Rune {
             Rune::Archer | Rune::Warrior => Ability::AntiSwap,
             Rune::Queen | Rune::Magician | Rune::Weather => Ability::AntiPlague,
             Rune::Beast => Ability::NoWeather,
-            Rune::Count | Rune::Countess => Ability::ScoreChanging(ScoreModifier {
-                op: Op::Add(1),
-                affected: AffectedCards::Adjacent,
-            }),
+            Rune::Count | Rune::Countess => Ability::AdjacentPlusOne,
         }
     }
 }

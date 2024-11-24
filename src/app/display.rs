@@ -2,10 +2,7 @@ use std::str;
 
 use inquire::{Confirm, Select};
 
-use super::{
-    AffectedCards, Card, Field, Hand, Op, Player, Row, RowOfCards, Score, Season, Spot,
-    WinCondition,
-};
+use super::{Card, Field, Hand, Player, Row, RowOfCards, Score, Season, Spot, WinCondition};
 
 pub(super) struct Play {
     pub player_turn: usize,
@@ -115,7 +112,7 @@ pub(crate) fn round_over(winner_season: Season, condition: WinCondition) {
         winner_season, condition
     );
 }
-pub(crate) fn next_player(season: Season) {
+pub(crate) fn wait_for_next_player(season: Season) {
     let message = format!("{} player, press enter to start your turn.", season);
     Confirm::new(&message)
         .with_default(true)
@@ -204,11 +201,7 @@ fn display_row(row: &RowOfCards, f: fn(&Card) -> String) {
 fn display_scores(card: &Card) -> String {
     match (card.garden_score(), card.court_score()) {
         (Score::Value(gs), Score::Value(cs)) => format!("{gs} / {cs}"),
-        (Score::Mod(gs), Score::Mod(_)) => match (gs.op, gs.affected) {
-            (Op::Add(a), AffectedCards::Row) => format!("Row {a:+}"),
-            (Op::Mult(a), AffectedCards::Row) => format!("Row x{a}"),
-            _ => panic!("Invalid card"),
-        },
+        (Score::Mod(gs), Score::Mod(cs)) => format!("{gs} / {cs}"),
         _ => panic!("Invalid card"),
     }
 }
@@ -263,7 +256,7 @@ mod test {
     fn test_show_field() {
         let mut field = Field::new();
         field.set(
-            Some(Card::load_all("assets/card_list.csv")[56]),
+            Some(Card::create_ancient(Season::Autumn)),
             Spot::new(Row::Court, 0),
         );
         show_field(&field);

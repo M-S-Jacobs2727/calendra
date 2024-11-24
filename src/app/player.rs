@@ -64,7 +64,7 @@ impl Player {
     pub(crate) fn move_hand_to_deck(&mut self) {
         self.deck.append(&mut self.hand);
     }
-    pub(crate) fn reset_field(&mut self) {
+    pub(crate) fn remove_cards_from_field(&mut self) {
         for i in 0..5usize {
             let opt_card = self.field.court[i].take();
             if let Some(card) = opt_card {
@@ -89,18 +89,13 @@ impl Player {
     pub(crate) fn add_to_deck(&mut self, card: Card) {
         self.deck.push(card);
     }
-    pub(crate) fn add_to_hand(&mut self, card: Card) {
+    pub(crate) fn add_card_to_hand(&mut self, card: Card) {
         self.hand.push(card);
-    }
-    pub(crate) fn swap_prizes(&mut self, other: &mut Self) {
-        let prize = self.take_prize();
-        self.prize = Some(other.take_prize());
-        other.prize = Some(prize);
     }
     pub(crate) fn shuffle_deck(&mut self) {
         self.deck.shuffle(&mut rand::thread_rng());
     }
-    pub(crate) fn take_from_hand(&mut self, card_index: usize) -> Card {
+    pub(crate) fn take_card_from_hand(&mut self, card_index: usize) -> Card {
         self.hand.remove(card_index)
     }
     pub(crate) fn play_card(&mut self, card: Card, spot: Spot) -> Option<Card> {
@@ -110,5 +105,13 @@ impl Player {
         };
         self.field.set(Some(card), spot);
         old_card
+    }
+
+    pub(crate) fn set_prize(&mut self, prize: Card) {
+        assert!(
+            self.prize.is_none(),
+            "Prize should be empty when calling set_prize"
+        );
+        self.prize = Some(prize);
     }
 }

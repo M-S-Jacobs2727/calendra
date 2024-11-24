@@ -6,23 +6,138 @@ pub(crate) use ability::*;
 pub(crate) use rune::*;
 pub(crate) use score::*;
 
-use std::{
-    fmt::Display,
-    fs,
-    io::{self, BufRead},
-    path::Path,
-};
+use std::fmt::Display;
 
 use super::Season;
 
-// The output is wrapped in a Result to allow matching on errors.
-// Returns an Iterator to the Reader of the lines of the file.
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<fs::File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = fs::File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+pub(crate) fn all_cards() -> Vec<Card> {
+    vec![
+        // Ferric
+        Card::create_ancient(Season::Ferric),
+        Card::create_archer(Season::Ferric, 8),
+        Card::create_archer(Season::Ferric, 7),
+        Card::create_beast(Season::Ferric, 10),
+        Card::create_beast(Season::Ferric, 9),
+        Card::create_changeling(Season::Ferric),
+        Card::create_changeling(Season::Ferric),
+        Card::create_count(Season::Ferric),
+        Card::create_countess(Season::Ferric),
+        Card::create_magician(Season::Ferric, 10),
+        Card::create_magician(Season::Ferric, 9),
+        Card::create_mist(),
+        Card::create_mist(),
+        Card::create_plague(Season::Ferric),
+        Card::create_plague(Season::Ferric),
+        Card::create_queen(Season::Ferric, 9),
+        Card::create_queen(Season::Ferric, 7),
+        Card::create_queen(Season::Ferric, 5),
+        Card::create_warrior(Season::Ferric, 10),
+        Card::create_warrior(Season::Ferric, 9),
+        // Spring
+        Card::create_ancient(Season::Spring),
+        Card::create_archer(Season::Spring, 6),
+        Card::create_archer(Season::Spring, 5),
+        Card::create_archer(Season::Spring, 4),
+        Card::create_beast(Season::Spring, 12),
+        Card::create_beast(Season::Spring, 10),
+        Card::create_beast(Season::Spring, 8),
+        Card::create_changeling(Season::Spring),
+        Card::create_changeling(Season::Spring),
+        Card::create_changeling(Season::Spring),
+        Card::create_changeling(Season::Spring),
+        Card::create_count(Season::Spring),
+        Card::create_countess(Season::Spring),
+        Card::create_magician(Season::Spring, 9),
+        Card::create_magician(Season::Spring, 8),
+        Card::create_magician(Season::Spring, 7),
+        Card::create_plague(Season::Spring),
+        Card::create_plague(Season::Spring),
+        Card::create_queen(Season::Spring, 7),
+        Card::create_queen(Season::Spring, 5),
+        Card::create_queen(Season::Spring, 3),
+        Card::create_warrior(Season::Spring, 9),
+        Card::create_warrior(Season::Spring, 8),
+        Card::create_warrior(Season::Spring, 7),
+        Card::create_weather(Season::Spring),
+        // Summer
+        Card::create_ancient(Season::Summer),
+        Card::create_archer(Season::Summer, 6),
+        Card::create_archer(Season::Summer, 5),
+        Card::create_archer(Season::Summer, 4),
+        Card::create_beast(Season::Summer, 12),
+        Card::create_beast(Season::Summer, 10),
+        Card::create_beast(Season::Summer, 8),
+        Card::create_changeling(Season::Summer),
+        Card::create_changeling(Season::Summer),
+        Card::create_changeling(Season::Summer),
+        Card::create_changeling(Season::Summer),
+        Card::create_count(Season::Summer),
+        Card::create_countess(Season::Summer),
+        Card::create_magician(Season::Summer, 9),
+        Card::create_magician(Season::Summer, 8),
+        Card::create_magician(Season::Summer, 7),
+        Card::create_plague(Season::Summer),
+        Card::create_plague(Season::Summer),
+        Card::create_queen(Season::Summer, 7),
+        Card::create_queen(Season::Summer, 5),
+        Card::create_queen(Season::Summer, 3),
+        Card::create_warrior(Season::Summer, 9),
+        Card::create_warrior(Season::Summer, 8),
+        Card::create_warrior(Season::Summer, 7),
+        Card::create_weather(Season::Summer),
+        // Autumn
+        Card::create_ancient(Season::Autumn),
+        Card::create_archer(Season::Autumn, 6),
+        Card::create_archer(Season::Autumn, 5),
+        Card::create_archer(Season::Autumn, 4),
+        Card::create_beast(Season::Autumn, 12),
+        Card::create_beast(Season::Autumn, 10),
+        Card::create_beast(Season::Autumn, 8),
+        Card::create_changeling(Season::Autumn),
+        Card::create_changeling(Season::Autumn),
+        Card::create_changeling(Season::Autumn),
+        Card::create_changeling(Season::Autumn),
+        Card::create_count(Season::Autumn),
+        Card::create_countess(Season::Autumn),
+        Card::create_magician(Season::Autumn, 9),
+        Card::create_magician(Season::Autumn, 8),
+        Card::create_magician(Season::Autumn, 7),
+        Card::create_plague(Season::Autumn),
+        Card::create_plague(Season::Autumn),
+        Card::create_queen(Season::Autumn, 7),
+        Card::create_queen(Season::Autumn, 5),
+        Card::create_queen(Season::Autumn, 3),
+        Card::create_warrior(Season::Autumn, 9),
+        Card::create_warrior(Season::Autumn, 8),
+        Card::create_warrior(Season::Autumn, 7),
+        Card::create_weather(Season::Autumn),
+        // Winter
+        Card::create_ancient(Season::Winter),
+        Card::create_archer(Season::Winter, 6),
+        Card::create_archer(Season::Winter, 5),
+        Card::create_archer(Season::Winter, 4),
+        Card::create_beast(Season::Winter, 12),
+        Card::create_beast(Season::Winter, 10),
+        Card::create_beast(Season::Winter, 8),
+        Card::create_changeling(Season::Winter),
+        Card::create_changeling(Season::Winter),
+        Card::create_changeling(Season::Winter),
+        Card::create_changeling(Season::Winter),
+        Card::create_count(Season::Winter),
+        Card::create_countess(Season::Winter),
+        Card::create_magician(Season::Winter, 9),
+        Card::create_magician(Season::Winter, 8),
+        Card::create_magician(Season::Winter, 7),
+        Card::create_plague(Season::Winter),
+        Card::create_plague(Season::Winter),
+        Card::create_queen(Season::Winter, 7),
+        Card::create_queen(Season::Winter, 5),
+        Card::create_queen(Season::Winter, 3),
+        Card::create_warrior(Season::Winter, 9),
+        Card::create_warrior(Season::Winter, 8),
+        Card::create_warrior(Season::Winter, 7),
+        Card::create_weather(Season::Winter),
+    ]
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -142,28 +257,16 @@ impl Card {
         Self {
             season: Season::Ferric,
             rune: Rune::Mist,
-            garden_score: Score::Mod(ScoreModifier {
-                op: Op::Add(-1),
-                affected: AffectedCards::Row,
-            }),
-            court_score: Score::Mod(ScoreModifier {
-                op: Op::Add(-1),
-                affected: AffectedCards::Row,
-            }),
+            garden_score: Score::Mod(RowScoreModifier::Add(-1)),
+            court_score: Score::Mod(RowScoreModifier::Add(-1)),
         }
     }
     pub(crate) fn create_plague(season: Season) -> Self {
         Self {
             season,
             rune: Rune::Plague,
-            garden_score: Score::Mod(ScoreModifier {
-                op: Op::Mult(0),
-                affected: AffectedCards::Row,
-            }),
-            court_score: Score::Mod(ScoreModifier {
-                op: Op::Mult(0),
-                affected: AffectedCards::Row,
-            }),
+            garden_score: Score::Mod(RowScoreModifier::Mult(0)),
+            court_score: Score::Mod(RowScoreModifier::Mult(0)),
         }
     }
     pub(crate) fn create_queen(season: Season, score: i32) -> Self {
@@ -200,10 +303,7 @@ impl Card {
         }
     }
     pub(crate) fn create_weather(season: Season) -> Self {
-        let score = Score::Mod(ScoreModifier {
-            op: Op::Mult(2),
-            affected: AffectedCards::Row,
-        });
+        let score = Score::Mod(RowScoreModifier::Mult(2));
         Self {
             season,
             rune: Rune::Weather,
@@ -212,54 +312,6 @@ impl Card {
         }
     }
 
-    pub(crate) fn load_all(filename: &str) -> Vec<Self> {
-        match read_lines(filename) {
-            Ok(lines) => lines
-                .skip(1)
-                .map(|line| Card::from_csv_row(line.expect("Failed to read row")))
-                .collect(),
-            Err(_) => panic!("Failed to read file"),
-        }
-    }
-    fn from_csv_row(row: String) -> Self {
-        let words: Vec<&str> = row.split(',').collect();
-        assert_eq!(
-            4,
-            words.len(),
-            "Row should have four fields: Season,Rune,CourtScore,GardenScore"
-        );
-        let season = match words[0] {
-            "Ferric" => Season::Ferric,
-            "Spring" => Season::Spring,
-            "Summer" => Season::Summer,
-            "Autumn" => Season::Autumn,
-            "Winter" => Season::Winter,
-            _ => panic!("Invalid Season string: {}", words[0]),
-        };
-        let rune = match words[1] {
-            "Ancient" => Rune::Ancient,
-            "Archer" => Rune::Archer,
-            "Beast" => Rune::Beast,
-            "Changeling" => Rune::Changeling,
-            "Count" => Rune::Count,
-            "Countess" => Rune::Countess,
-            "Magician" => Rune::Magician,
-            "Mist" => Rune::Mist,
-            "Plague" => Rune::Plague,
-            "Queen" => Rune::Queen,
-            "Warrior" => Rune::Warrior,
-            "Weather" => Rune::Weather,
-            _ => panic!("Invalid Rune string: {}", words[1]),
-        };
-        let garden_score = Score::from_string(words[2]);
-        let court_score = Score::from_string(words[3]);
-        Self {
-            season,
-            rune,
-            court_score,
-            garden_score,
-        }
-    }
     pub(crate) fn season(&self) -> Season {
         self.season
     }
@@ -333,42 +385,24 @@ impl From<String> for Card {
                 Rune::Mist => {
                     if is_ferric {
                         (
-                            Score::Mod(ScoreModifier {
-                                op: Op::Add(-1),
-                                affected: AffectedCards::Row,
-                            }),
-                            Score::Mod(ScoreModifier {
-                                op: Op::Add(-1),
-                                affected: AffectedCards::Row,
-                            }),
+                            Score::Mod(RowScoreModifier::Add(-1)),
+                            Score::Mod(RowScoreModifier::Add(-1)),
                         )
                     } else {
                         panic!("Non-Ferric Mist should not exist!")
                     }
                 }
                 Rune::Plague => (
-                    Score::Mod(ScoreModifier {
-                        op: Op::Mult(0),
-                        affected: AffectedCards::Row,
-                    }),
-                    Score::Mod(ScoreModifier {
-                        op: Op::Mult(0),
-                        affected: AffectedCards::Row,
-                    }),
+                    Score::Mod(RowScoreModifier::Mult(0)),
+                    Score::Mod(RowScoreModifier::Mult(0)),
                 ),
                 Rune::Weather => {
                     if is_ferric {
                         panic!("Ferric Weather should not exist!")
                     } else {
                         (
-                            Score::Mod(ScoreModifier {
-                                op: Op::Mult(2),
-                                affected: AffectedCards::Row,
-                            }),
-                            Score::Mod(ScoreModifier {
-                                op: Op::Mult(2),
-                                affected: AffectedCards::Row,
-                            }),
+                            Score::Mod(RowScoreModifier::Mult(2)),
+                            Score::Mod(RowScoreModifier::Mult(2)),
                         )
                     }
                 }

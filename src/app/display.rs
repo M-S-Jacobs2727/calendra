@@ -119,6 +119,7 @@ pub(crate) fn next_player(season: Season) {
     let message = format!("{} player, press enter to start your turn.", season);
     Confirm::new(&message).prompt().expect("Cancelled");
 }
+
 fn show_title(title: &str) {
     let word = format!(" {title} ");
 
@@ -140,16 +141,10 @@ fn select_card_from_hand(hand: &Hand) -> usize {
 }
 fn select_player_field(seasons: Vec<Season>, card_name: &str) -> Option<usize> {
     let message = format!("On which player's field do you wish to play {}?", card_name);
-    let mut options: Vec<String> = seasons.iter().map(|s| format!("{}", s)).collect();
-    options.push(String::from("Back"));
-    let index = Select::new(&message, options)
-        .raw_prompt()
-        .expect("Expected a choice")
-        .index;
-    if index == seasons.len() {
-        None
-    } else {
-        Some(index)
+    let options: Vec<String> = seasons.iter().map(|s| format!("{}", s)).collect();
+    match Select::new(&message, options).raw_prompt() {
+        Ok(res) => Some(res.index),
+        Err(_) => None,
     }
 }
 fn select_spot_on_field(field: &Field, is_swap: bool, card_name: &str) -> Option<Spot> {
@@ -178,8 +173,7 @@ fn select_spot_on_field(field: &Field, is_swap: bool, card_name: &str) -> Option
             .collect()
     };
     let spots: Vec<Spot> = spot_options.iter().map(|so| so.0.clone()).collect();
-    let mut spot_options: Vec<String> = spot_options.iter().map(|so| so.1.clone()).collect();
-    spot_options.push(String::from("Back"));
+    let spot_options: Vec<String> = spot_options.iter().map(|so| so.1.clone()).collect();
 
     show_field(field);
     let message = if is_swap {
@@ -187,14 +181,9 @@ fn select_spot_on_field(field: &Field, is_swap: bool, card_name: &str) -> Option
     } else {
         format!("Where will you play {}?", card_name)
     };
-    let card_index = Select::new(message.as_str(), spot_options)
-        .raw_prompt()
-        .expect("Should be a card")
-        .index;
-    if card_index >= spots.len() {
-        None
-    } else {
-        Some(spots[card_index])
+    match Select::new(&message, spot_options).raw_prompt() {
+        Ok(res) => Some(spots[res.index]),
+        Err(_) => None,
     }
 }
 fn display_row(row: &RowOfCards, f: fn(&Card) -> String) {
@@ -278,11 +267,11 @@ mod test {
     }
     #[test]
     fn test_show_title() {
-        show_title(Season::Spring.to_string().as_str());
-        show_title(Season::Summer.to_string().as_str());
-        show_title(Season::Autumn.to_string().as_str());
-        show_title(Season::Winter.to_string().as_str());
-        show_title(Season::Ferric.to_string().as_str());
+        show_title(&Season::Spring.to_string());
+        show_title(&Season::Summer.to_string());
+        show_title(&Season::Autumn.to_string());
+        show_title(&Season::Winter.to_string());
+        show_title(&Season::Ferric.to_string());
         show_title("This one is longer");
     }
 }

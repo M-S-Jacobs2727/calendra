@@ -2,14 +2,17 @@ use std::str;
 
 use inquire::{Confirm, Select};
 
-use crate::app::field::{Row, Spot};
-
 use super::{
-    card::Card,
-    field::{Field, RowOfCards},
-    player::{Hand, Player},
-    AffectedCards, Op, Play, Score, Season, WinCondition,
+    AffectedCards, Card, Field, Hand, Op, Player, Row, RowOfCards, Score, Season, Spot,
+    WinCondition,
 };
+
+pub(super) struct Play {
+    pub player_turn: usize,
+    pub played_field: usize,
+    pub card_index: usize,
+    pub spot: Spot,
+}
 
 pub(crate) fn get_num_players() -> i32 {
     loop {

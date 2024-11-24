@@ -1,9 +1,7 @@
 use strum_macros::Display;
 
-use super::{
-    score::{AffectedCards, Op, ScoreModifier},
-    Ability,
-};
+use super::{Ability, AffectedCards, Op, ScoreModifier};
+
 #[derive(Clone, Copy, Debug, PartialEq, Display)]
 pub(crate) enum Rune {
     Ancient,
@@ -20,7 +18,7 @@ pub(crate) enum Rune {
     Weather,
 }
 impl Rune {
-    pub fn ability(&self) -> Ability {
+    pub(crate) fn ability(&self) -> Ability {
         match self {
             Rune::Ancient => Ability::Ancient,
             Rune::Changeling | Rune::Mist | Rune::Plague => Ability::Swap,

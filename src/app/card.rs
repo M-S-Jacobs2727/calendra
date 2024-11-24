@@ -2,6 +2,10 @@ mod ability;
 mod rune;
 mod score;
 
+pub(crate) use ability::*;
+pub(crate) use rune::*;
+pub(crate) use score::*;
+
 use std::{
     fmt::Display,
     fs,
@@ -10,10 +14,6 @@ use std::{
 };
 
 use super::Season;
-pub(crate) use ability::Ability;
-pub(crate) use rune::Rune;
-use score::ScoreModifier;
-pub(crate) use score::{AffectedCards, Op, Score};
 
 // The output is wrapped in a Result to allow matching on errors.
 // Returns an Iterator to the Reader of the lines of the file.
@@ -26,14 +26,193 @@ where
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub struct Card {
+pub(crate) struct Card {
     season: Season,
     rune: Rune,
     court_score: Score,
     garden_score: Score,
 }
 impl Card {
-    pub fn load_all(filename: &str) -> Vec<Self> {
+    pub(crate) fn create_ancient(season: Season) -> Self {
+        let score = match season {
+            Season::Ferric => 12,
+            _ => 10,
+        };
+        let score = Score::Value(score);
+        Self {
+            season,
+            rune: Rune::Ancient,
+            garden_score: score,
+            court_score: score,
+        }
+    }
+    pub(crate) fn create_archer(season: Season, score: i32) -> Self {
+        match season {
+            Season::Ferric => assert!(score == 7 || score == 8),
+            _ => assert!(score < 7 && score > 4),
+        };
+        let score = Score::Value(score);
+        Self {
+            season,
+            rune: Rune::Archer,
+            garden_score: score,
+            court_score: score,
+        }
+    }
+    pub(crate) fn create_beast(season: Season, garden_score: i32) -> Self {
+        let court_score = match season {
+            Season::Ferric => {
+                assert!(garden_score == 10 || garden_score == 9);
+                garden_score
+            }
+            _ => {
+                assert!(garden_score == 12 || garden_score == 10 || garden_score == 8);
+                0
+            }
+        };
+        let garden_score = Score::Value(garden_score);
+        let court_score = Score::Value(court_score);
+        Self {
+            season,
+            rune: Rune::Beast,
+            garden_score,
+            court_score,
+        }
+    }
+    pub(crate) fn create_changeling(season: Season) -> Self {
+        let score = match season {
+            Season::Ferric => 2,
+            _ => 0,
+        };
+        let score = Score::Value(score);
+        Self {
+            season,
+            rune: Rune::Changeling,
+            court_score: score,
+            garden_score: score,
+        }
+    }
+    pub(crate) fn create_count(season: Season) -> Self {
+        let score = match season {
+            Season::Ferric => 9,
+            _ => 8,
+        };
+        let score = Score::Value(score);
+        Self {
+            season,
+            rune: Rune::Count,
+            court_score: score,
+            garden_score: score,
+        }
+    }
+    pub(crate) fn create_countess(season: Season) -> Self {
+        let score = match season {
+            Season::Ferric => 10,
+            _ => 9,
+        };
+        let score = Score::Value(score);
+        Self {
+            season,
+            rune: Rune::Countess,
+            court_score: score,
+            garden_score: score,
+        }
+    }
+    pub(crate) fn create_magician(season: Season, court_score: i32) -> Self {
+        let garden_score = match season {
+            Season::Ferric => {
+                assert!(court_score == 10 || court_score == 9);
+                10 - court_score
+            }
+            _ => {
+                assert!(court_score == 9 || court_score == 8 || court_score == 7);
+                10 - court_score
+            }
+        };
+        let garden_score = Score::Value(garden_score);
+        let court_score = Score::Value(court_score);
+        Self {
+            season,
+            rune: Rune::Beast,
+            garden_score,
+            court_score,
+        }
+    }
+    pub(crate) fn create_mist() -> Self {
+        Self {
+            season: Season::Ferric,
+            rune: Rune::Mist,
+            garden_score: Score::Mod(ScoreModifier {
+                op: Op::Add(-1),
+                affected: AffectedCards::Row,
+            }),
+            court_score: Score::Mod(ScoreModifier {
+                op: Op::Add(-1),
+                affected: AffectedCards::Row,
+            }),
+        }
+    }
+    pub(crate) fn create_plague(season: Season) -> Self {
+        Self {
+            season,
+            rune: Rune::Plague,
+            garden_score: Score::Mod(ScoreModifier {
+                op: Op::Mult(0),
+                affected: AffectedCards::Row,
+            }),
+            court_score: Score::Mod(ScoreModifier {
+                op: Op::Mult(0),
+                affected: AffectedCards::Row,
+            }),
+        }
+    }
+    pub(crate) fn create_queen(season: Season, score: i32) -> Self {
+        match season {
+            Season::Ferric => assert!(score == 9 || score == 7 || score == 5),
+            _ => assert!(score == 7 || score == 5 || score == 3),
+        };
+        let score = Score::Value(score);
+        Self {
+            season,
+            rune: Rune::Queen,
+            garden_score: score,
+            court_score: score,
+        }
+    }
+    pub(crate) fn create_warrior(season: Season, garden_score: i32) -> Self {
+        let court_score = match season {
+            Season::Ferric => {
+                assert!(garden_score == 10 || garden_score == 9);
+                10 - garden_score
+            }
+            _ => {
+                assert!(garden_score == 9 || garden_score == 8 || garden_score == 7);
+                10 - garden_score
+            }
+        };
+        let garden_score = Score::Value(garden_score);
+        let court_score = Score::Value(court_score);
+        Self {
+            season,
+            rune: Rune::Beast,
+            garden_score,
+            court_score,
+        }
+    }
+    pub(crate) fn create_weather(season: Season) -> Self {
+        let score = Score::Mod(ScoreModifier {
+            op: Op::Mult(2),
+            affected: AffectedCards::Row,
+        });
+        Self {
+            season,
+            rune: Rune::Weather,
+            court_score: score,
+            garden_score: score,
+        }
+    }
+
+    pub(crate) fn load_all(filename: &str) -> Vec<Self> {
         match read_lines(filename) {
             Ok(lines) => lines
                 .skip(1)
@@ -81,16 +260,16 @@ impl Card {
             garden_score,
         }
     }
-    pub fn season(&self) -> Season {
+    pub(crate) fn season(&self) -> Season {
         self.season
     }
-    pub fn rune(&self) -> Rune {
+    pub(crate) fn rune(&self) -> Rune {
         self.rune
     }
-    pub fn court_score(&self) -> Score {
+    pub(crate) fn court_score(&self) -> Score {
         self.court_score
     }
-    pub fn garden_score(&self) -> Score {
+    pub(crate) fn garden_score(&self) -> Score {
         self.garden_score
     }
 

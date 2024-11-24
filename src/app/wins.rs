@@ -1,28 +1,23 @@
 use strum_macros::Display;
 
-use crate::app::card::Score;
-
-use super::{
-    card::{AffectedCards, Card, Op},
-    field::{Field, Row, RowOfCards, Spot},
-    Rune, Season,
-};
+use super::{AffectedCards, Card, Field, Op, Row, RowOfCards, Rune, Score, Season, Spot};
 
 #[derive(PartialEq, Debug)]
-pub struct Win {
-    pub player_idx: usize,
-    pub game_won: bool,
-    pub condition: WinCondition,
+pub(crate) struct Win {
+    pub(crate) player_idx: usize,
+    pub(crate) game_won: bool,
+    pub(crate) condition: WinCondition,
 }
+
 #[derive(PartialEq, Debug, Display)]
-pub enum WinCondition {
+pub(crate) enum WinCondition {
     CountCountess([Spot; 2]),
     ThreeInCourt([Spot; 3]),
     TwoPlagues([Spot; 2]),
     FourtyPoints,
 }
 
-pub fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCondition> {
+pub(crate) fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCondition> {
     if let Rune::Plague = card.rune() {
         return if let Some(spots) = check_two_plagues(field.row(spot.row().opposite()), spot) {
             Some(WinCondition::TwoPlagues([spots[0], spots[1]]))
@@ -51,7 +46,7 @@ pub fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCondition
     }
 }
 
-pub fn check_two_ancients_house_rule(
+pub(crate) fn check_two_ancients_house_rule(
     row: &RowOfCards,
     condition: &WinCondition,
     season: Season,
@@ -71,7 +66,7 @@ pub fn check_two_ancients_house_rule(
     false
 }
 
-pub fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
+pub(crate) fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
     let num_cards_required = match rune {
         Rune::Ancient => 0,
         Rune::Beast | Rune::Changeling | Rune::Queen => 3,
@@ -129,6 +124,31 @@ pub fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
                 return Some(spots);
             }
         }
+    } else if num_cards_required == 2 {
+        let positions: Vec<usize> = court
+            .iter()
+            .enumerate()
+            .filter_map(|(i, c)| {
+                if let Some(card) = c {
+                    match card.rune() {
+                        Rune::Ancient | Rune::Count | Rune::Countess => Some(i),
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect();
+        return if positions.len() < 2
+            || court[positions[0]].unwrap().rune() == court[positions[1]].unwrap().rune()
+        {
+            None
+        } else {
+            Some(vec![
+                Spot::new(Row::Court, positions[0]),
+                Spot::new(Row::Court, positions[1]),
+            ])
+        };
     } else {
         let valid_spots: Vec<Spot> = court
             .iter()
@@ -141,14 +161,14 @@ pub fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
                 }
             })
             .collect();
-        if valid_spots.len() >= num_cards_required {
+        if valid_spots.len() >= 3 {
             return Some(valid_spots);
         }
     }
     None
 }
 
-pub fn check_two_plagues(row: &RowOfCards, spot: &Spot) -> Option<Vec<Spot>> {
+pub(crate) fn check_two_plagues(row: &RowOfCards, spot: &Spot) -> Option<Vec<Spot>> {
     let spots: Vec<Spot> = row
         .iter()
         .enumerate()
@@ -168,7 +188,7 @@ pub fn check_two_plagues(row: &RowOfCards, spot: &Spot) -> Option<Vec<Spot>> {
     }
 }
 
-pub fn check_fourty_points(field: &Field) -> bool {
+pub(crate) fn check_fourty_points(field: &Field) -> bool {
     count_points_in_row(&field.court, |c| c.court_score())
         + count_points_in_row(&field.garden, |c| c.garden_score())
         >= 40
@@ -230,4 +250,59 @@ fn count_points_in_row(row: &RowOfCards, card_score_fn: fn(&Card) -> Score) -> i
         .unwrap();
 
     total * multiplier
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_two_plagues() {
+        let mut field = Field::new();
+        let card = Card::create_plague(Season::Autumn);
+
+        let spot = Spot::new(Row::Court, 0);
+        field.set(Some(card.clone()), spot.clone());
+        field.set(Some(card), Spot::new(Row::Garden, 1));
+        let wc = check_win(&field, &spot, &card);
+
+        assert!(wc.is_some(), "Should be a win condition");
+        assert!(
+            match wc.unwrap() {
+                WinCondition::TwoPlagues(_) => true,
+                _ => false,
+            },
+            "Should be two plagues"
+        );
+    }
+
+    #[test]
+    fn test_two_countesses_no_win() {
+        let card1 = Card::create_countess(Season::Autumn);
+        let card2 = Card::create_countess(Season::Ferric);
+        let spot1 = Spot::new(Row::Court, 0);
+        let spot2 = Spot::new(Row::Court, 1);
+
+        let mut field = Field::new();
+        field.set(Some(card1), spot1);
+        field.set(Some(card2), spot2);
+
+        let wc = check_win(&field, &spot1, &card1);
+        assert!(wc.is_none());
+    }
+
+    #[test]
+    fn test_two_counts_no_win() {
+        let card1 = Card::create_count(Season::Autumn);
+        let card2 = Card::create_count(Season::Ferric);
+        let spot1 = Spot::new(Row::Court, 0);
+        let spot2 = Spot::new(Row::Court, 1);
+
+        let mut field = Field::new();
+        field.set(Some(card1), spot1);
+        field.set(Some(card2), spot2);
+
+        let wc = check_win(&field, &spot1, &card1);
+        assert!(wc.is_none());
+    }
 }

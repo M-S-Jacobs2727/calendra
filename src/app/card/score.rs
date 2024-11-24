@@ -22,7 +22,7 @@ pub(crate) struct ScoreModifier {
 }
 
 impl Score {
-    pub fn from_string(string: &str) -> Self {
+    pub(crate) fn from_string(string: &str) -> Self {
         let first_char = string.chars().nth(0).expect("Empty score string");
         if "0123456789".contains(first_char) {
             let val: i32 = string.parse().expect("Invalid score string");

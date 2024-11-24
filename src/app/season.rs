@@ -1,7 +1,7 @@
 use strum_macros::Display;
 
 #[derive(Clone, Copy, Display, PartialEq, Debug)]
-pub enum Season {
+pub(crate) enum Season {
     Spring,
     Summer,
     Autumn,

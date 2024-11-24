@@ -1,15 +1,11 @@
 use rand::seq::SliceRandom;
 
-use super::{
-    card::Card,
-    field::{Field, Row, Spot},
-    Season,
-};
+use super::{Card, Field, Row, Season, Spot};
 
-pub type Deck = Vec<Card>;
-pub type Hand = Vec<Card>;
+pub(crate) type Deck = Vec<Card>;
+pub(crate) type Hand = Vec<Card>;
 
-pub struct Player {
+pub(crate) struct Player {
     deck: Deck,
     hand: Hand,
     prize: Option<Card>,
@@ -17,7 +13,7 @@ pub struct Player {
     season: Season,
 }
 impl Player {
-    pub fn new(season: Season) -> Self {
+    pub(crate) fn new(season: Season) -> Self {
         assert!(
             season != Season::Ferric,
             "Player's season should not be Ferric"
@@ -35,13 +31,13 @@ impl Player {
     // pub fn deck(&self) -> &Vec<Card> {
     //     &self.deck
     // }
-    pub fn hand(&self) -> &Vec<Card> {
+    pub(crate) fn hand(&self) -> &Vec<Card> {
         &self.hand
     }
-    pub fn prize(&self) -> &Option<Card> {
+    pub(crate) fn prize(&self) -> &Option<Card> {
         &self.prize
     }
-    pub fn field(&self) -> &Field {
+    pub(crate) fn field(&self) -> &Field {
         &self.field
     }
     pub(crate) fn season(&self) -> Season {
@@ -49,26 +45,26 @@ impl Player {
     }
 
     // Setters
-    pub fn set_deck(&mut self, deck: Vec<Card>) {
+    pub(crate) fn set_deck(&mut self, deck: Vec<Card>) {
         self.deck = deck;
     }
-    pub fn take_prize(&mut self) -> Card {
+    pub(crate) fn take_prize(&mut self) -> Card {
         self.prize.take().expect("Expected a prize")
     }
 
     // Actions
-    pub fn fill_hand(&mut self) {
+    pub(crate) fn fill_hand(&mut self) {
         let num_cards_to_draw = 10 - self.hand.len();
         let at = self.deck.len() - num_cards_to_draw;
         self.hand.append(&mut self.deck.split_off(at));
     }
-    pub fn show_prize(&mut self) {
+    pub(crate) fn show_prize(&mut self) {
         self.prize = self.deck.pop();
     }
-    pub fn move_hand_to_deck(&mut self) {
+    pub(crate) fn move_hand_to_deck(&mut self) {
         self.deck.append(&mut self.hand);
     }
-    pub fn reset_field(&mut self) {
+    pub(crate) fn reset_field(&mut self) {
         for i in 0..5usize {
             let opt_card = self.field.court[i].take();
             if let Some(card) = opt_card {
@@ -90,13 +86,13 @@ impl Player {
             }
         }
     }
-    pub fn add_to_deck(&mut self, card: Card) {
+    pub(crate) fn add_to_deck(&mut self, card: Card) {
         self.deck.push(card);
     }
-    pub fn add_to_hand(&mut self, card: Card) {
+    pub(crate) fn add_to_hand(&mut self, card: Card) {
         self.hand.push(card);
     }
-    pub fn swap_prizes(&mut self, other: &mut Self) {
+    pub(crate) fn swap_prizes(&mut self, other: &mut Self) {
         let prize = self.take_prize();
         self.prize = Some(other.take_prize());
         other.prize = Some(prize);

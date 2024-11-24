@@ -2,7 +2,13 @@ use std::str;
 
 use inquire::{Confirm, Select};
 
-use super::{Card, Field, Hand, Player, Row, RowOfCards, Score, Season, Spot, WinCondition};
+use super::{
+    card::{score::Score, Card},
+    field::{Field, Row, RowOfCards, Spot},
+    player::{Hand, Player},
+    season::Season,
+    win_condition::WinCondition,
+};
 
 pub(super) struct Play {
     pub player_turn: usize,

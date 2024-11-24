@@ -5,30 +5,30 @@ mod player;
 mod season;
 mod win_condition;
 
-pub(crate) use card::*;
+use card::{all_cards, Card};
 use display::Play;
-pub(crate) use field::*;
-pub(crate) use player::*;
-pub(crate) use season::Season;
-pub(crate) use win_condition::*;
+use player::Player;
+use season::Season;
+use win_condition::{check_two_ancients_house_rule, check_win, WinCondition};
 
 use rand::prelude::*;
 
 #[derive(PartialEq, Debug)]
-pub(crate) struct WinState {
-    pub(crate) player_index: usize,
-    pub(crate) game_won: bool,
-    pub(crate) condition: WinCondition,
+struct WinState {
+    pub player_index: usize,
+    pub game_won: bool,
+    pub condition: WinCondition,
 }
 
 pub struct App {
     players: Vec<Player>,
 }
 impl App {
+    /// Create the game object
     pub fn new() -> Self {
         Self { players: vec![] }
     }
-    /// Use this method to run the game.
+    /// Use this method to run the game
     pub fn run(&mut self) {
         let num_players = display::get_num_players();
 

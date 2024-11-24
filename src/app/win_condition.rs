@@ -1,6 +1,14 @@
 use strum_macros::Display;
 
-use super::{Card, Field, Row, RowOfCards, RowScoreModifier, Rune, Score, Season, Spot};
+use super::{
+    card::{
+        rune::Rune,
+        score::{RowScoreModifier, Score},
+        Card,
+    },
+    field::{Field, Row, RowOfCards, Spot},
+    season::Season,
+};
 
 #[derive(PartialEq, Debug, Display)]
 pub(crate) enum WinCondition {
@@ -39,12 +47,13 @@ pub(crate) fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCo
     }
 }
 
+/// House rule: Two ancients in the court, one in season and the other Ferric,
+/// counts as a game win
 pub(crate) fn check_two_ancients_house_rule(
     row: &RowOfCards,
     condition: &WinCondition,
     season: Season,
 ) -> bool {
-    // House rule: Two ancients, one in season and the other Ferric, count as a game win
     if let WinCondition::CountCountess([spot1, spot2]) = condition {
         let c1 = row[spot1.place()].expect("Should be a card here");
         let c2 = row[spot2.place()].expect("Should be a card here");
@@ -59,7 +68,7 @@ pub(crate) fn check_two_ancients_house_rule(
     false
 }
 
-pub(crate) fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
+fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
     let num_cards_required = match rune {
         Rune::Ancient => 0,
         Rune::Beast | Rune::Changeling | Rune::Queen => 3,
@@ -161,7 +170,7 @@ pub(crate) fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<S
     None
 }
 
-pub(crate) fn check_two_plagues(row: &RowOfCards, spot: &Spot) -> Option<Vec<Spot>> {
+fn check_two_plagues(row: &RowOfCards, spot: &Spot) -> Option<Vec<Spot>> {
     let spots: Vec<Spot> = row
         .iter()
         .enumerate()
@@ -181,7 +190,7 @@ pub(crate) fn check_two_plagues(row: &RowOfCards, spot: &Spot) -> Option<Vec<Spo
     }
 }
 
-pub(crate) fn check_fourty_points(field: &Field) -> bool {
+fn check_fourty_points(field: &Field) -> bool {
     count_points_in_row(&field.court, |c| c.court_score())
         + count_points_in_row(&field.garden, |c| c.garden_score())
         >= 40

@@ -1,6 +1,10 @@
 use rand::seq::SliceRandom;
 
-use super::{Card, Field, Row, Season, Spot};
+use super::{
+    card::Card,
+    field::{Field, Row, Spot},
+    season::Season,
+};
 
 pub(crate) type Deck = Vec<Card>;
 pub(crate) type Hand = Vec<Card>;

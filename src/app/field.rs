@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use strum_macros::Display;
 
-use super::{Card, Season};
+use super::{card::Card, season::Season};
 
 pub(crate) type RowOfCards = [Option<Card>; 5];
 

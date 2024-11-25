@@ -2,6 +2,7 @@ use strum_macros::Display;
 
 use super::{
     card::{
+        ability::Ability,
         rune::Rune,
         score::{RowScoreModifier, Score},
         Card,
@@ -18,7 +19,10 @@ pub(crate) enum WinCondition {
     FourtyPoints,
 }
 
+/// After a card is played in a spot on a player's field, check if that field now
+/// counts as a win condition for that player.
 pub(crate) fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCondition> {
+    // A Plague card can only count as a win for the TwoPlagues win condition
     if let Rune::Plague = card.rune() {
         return if let Some(spots) = check_two_plagues(field.row(spot.row().opposite()), spot) {
             Some(WinCondition::TwoPlagues([spots[0], spots[1]]))
@@ -26,6 +30,8 @@ pub(crate) fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCo
             None
         };
     }
+    // After accounting for the TwoPlagues win condition, if the card was played in the
+    // Garden, then only the FourtyPoints win condition is possible
     if *spot.row() == Row::Garden {
         return if check_fourty_points(field) {
             Some(WinCondition::FourtyPoints)
@@ -33,6 +39,7 @@ pub(crate) fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCo
             None
         };
     }
+    // check_court short-circuits for non-applicable runes, so this is faster than check_fourty_points
     if let Some(spots) = check_court(&field.court, card.rune()) {
         return if spots.len() == 2 {
             Some(WinCondition::CountCountess([spots[0], spots[1]]))
@@ -67,7 +74,8 @@ pub(crate) fn check_two_ancients_house_rule(
     }
     false
 }
-
+/// Check the court if the rune of the played card is Ancient, Beast, Changeling, Queen,
+/// Count, or Countess. No other runes are possible for this win condition.
 fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
     let num_cards_required = match rune {
         Rune::Ancient => 0,
@@ -127,6 +135,7 @@ fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
             }
         }
     } else if num_cards_required == 2 {
+        // Checking for Count and Countess, Count and Ancient, or Countess and Ancient
         let positions: Vec<usize> = court
             .iter()
             .enumerate()
@@ -141,6 +150,8 @@ fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
                 }
             })
             .collect();
+
+        // If the runes are the same (e.g., Count and Count) then this is not a win condition
         return if positions.len() < 2
             || court[positions[0]].unwrap().rune() == court[positions[1]].unwrap().rune()
         {
@@ -152,6 +163,7 @@ fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
             ])
         };
     } else {
+        // Check for three cards of the same rune as the card played, or an Ancient
         let valid_spots: Vec<Spot> = court
             .iter()
             .enumerate()
@@ -170,6 +182,8 @@ fn check_court(court: &[Option<Card>; 5], rune: Rune) -> Option<Vec<Spot>> {
     None
 }
 
+/// Check the TwoPlagues win condition, where the Plagues must be played in
+/// opposite rows (one in the Court, one in the Garden).
 fn check_two_plagues(row: &RowOfCards, spot: &Spot) -> Option<Vec<Spot>> {
     let spots: Vec<Spot> = row
         .iter()
@@ -190,12 +204,18 @@ fn check_two_plagues(row: &RowOfCards, spot: &Spot) -> Option<Vec<Spot>> {
     }
 }
 
+/// Check if the sum of cards on the field are at least 40
 fn check_fourty_points(field: &Field) -> bool {
     count_points_in_row(&field.court, |c| c.court_score())
         + count_points_in_row(&field.garden, |c| c.garden_score())
         >= 40
 }
 
+/// Counts the total number of points in a row in the following order:
+/// 1. Count the individual points on each card
+/// 2. Count the Adj +1 modifiers from Counts/Countesses
+/// 3. Count the Row -1 modifiers from Mists
+/// 4. Count the Row xN modifiers from Weathers and Plagues
 fn count_points_in_row(row: &RowOfCards, card_score_fn: fn(&Card) -> Score) -> i32 {
     let mut scores = [0; 5];
     let num_cards = row.iter().filter(|&c| c.is_some()).count();
@@ -212,6 +232,15 @@ fn count_points_in_row(row: &RowOfCards, card_score_fn: fn(&Card) -> Score) -> i
         if let Some(card) = row[i].as_ref() {
             if let Score::Mod(RowScoreModifier::Add(value)) = card_score_fn(card) {
                 total += value * num_cards as i32;
+            } else if let Ability::AdjacentPlusOne = card.rune().ability() {
+                // Check card to the left, if it exists, for a value to modify
+                if i > 0 && row[i - 1].is_some_and(|c| card_score_fn(&c).is_value()) {
+                    total += 1;
+                }
+                // Check card to the right, if it exists, for a value to modify
+                if i < 4 && row[i + 1].is_some_and(|c| card_score_fn(&c).is_value()) {
+                    total += 1;
+                }
             }
         }
     }

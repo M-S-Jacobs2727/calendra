@@ -54,17 +54,21 @@ impl Player {
     }
 
     // Actions
+    /// Draw from the deck until the hand has 10 cards
     pub(crate) fn fill_hand(&mut self) {
         let num_cards_to_draw = 10 - self.hand.len();
         let at = self.deck.len() - num_cards_to_draw;
         self.hand.append(&mut self.deck.split_off(at));
     }
+    /// Flip the top card of the deck to show the prize
     pub(crate) fn show_prize(&mut self) {
         self.prize = self.deck.pop();
     }
+    /// Discard the hand into the deck (at the end of a round)
     pub(crate) fn move_hand_to_deck(&mut self) {
         self.deck.append(&mut self.hand);
     }
+    /// Send all cards that are in season to the hand, all others to the deck
     pub(crate) fn remove_cards_from_field(&mut self) {
         for i in 0..5usize {
             let opt_card = self.field.court[i].take();
@@ -87,7 +91,7 @@ impl Player {
             }
         }
     }
-    pub(crate) fn add_to_deck(&mut self, card: Card) {
+    pub(crate) fn add_card_to_deck(&mut self, card: Card) {
         self.deck.push(card);
     }
     pub(crate) fn add_card_to_hand(&mut self, card: Card) {
@@ -99,6 +103,8 @@ impl Player {
     pub(crate) fn take_card_from_hand(&mut self, card_index: usize) -> Card {
         self.hand.remove(card_index)
     }
+    /// Set a card in the given spot on the player's field. Return the card
+    /// that was in that spot previously, if any.
     pub(crate) fn play_card(&mut self, card: Card, spot: Spot) -> Option<Card> {
         let old_card = match spot.row() {
             Row::Garden => self.field.garden[spot.place()].take(),
@@ -107,12 +113,10 @@ impl Player {
         self.field.set(Some(card), spot);
         old_card
     }
-
-    pub(crate) fn set_prize(&mut self, prize: Card) {
-        assert!(
-            self.prize.is_none(),
-            "Prize should be empty when calling set_prize"
-        );
+    /// Set a card as the prize. (Used when swapping at the end of a round).
+    pub(crate) fn set_prize(&mut self, prize: Card) -> Option<Card> {
+        let current_prize = self.prize.take();
         self.prize = Some(prize);
+        current_prize
     }
 }

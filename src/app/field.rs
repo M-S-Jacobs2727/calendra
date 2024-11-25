@@ -35,6 +35,7 @@ impl Field {
             Row::Garden => &self.garden[spot.place() as usize],
         }
     }
+    /// Clone the field, keeping only the cards in the given season
     pub(crate) fn clone_in_season(&self, season: Season) -> Self {
         let mut field_in_season = self.clone();
         for row in [Row::Garden, Row::Court] {

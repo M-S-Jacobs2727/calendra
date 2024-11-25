@@ -119,7 +119,7 @@ impl App {
             {
                 player.add_card_to_hand(prize);
             } else {
-                player.add_to_deck(prize);
+                player.add_card_to_deck(prize);
             }
 
             player.shuffle_deck();

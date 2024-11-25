@@ -9,7 +9,10 @@ use super::{
     season::Season,
     win_condition::WinCondition,
 };
+// TODO: account for pressing Esc on prompts where it does nothing
+// just loop until a choice is taken
 
+// TODO: sort cards by season
 pub(super) struct Play {
     pub player_turn: usize,
     pub played_field: usize,
@@ -17,6 +20,7 @@ pub(super) struct Play {
     pub spot: Spot,
 }
 
+/// Prompt the user for a 2, 3, or 4-player game
 pub(crate) fn get_num_players() -> i32 {
     loop {
         let res = Select::new("Select number of players: ", vec![2, 3, 4]).prompt();
@@ -25,6 +29,7 @@ pub(crate) fn get_num_players() -> i32 {
         }
     }
 }
+/// Select the card to play and the location in which to play it
 pub(crate) fn select_play(player_turn: usize, players: &Vec<Player>) -> Play {
     let seasons: Vec<Season> = players.iter().map(|p| p.season()).collect();
     for i in 0..players.len() {
@@ -84,6 +89,7 @@ pub(crate) fn select_play(player_turn: usize, players: &Vec<Player>) -> Play {
         }
     }
 }
+/// Prompt the winner of a round to choose from the prizes available
 pub(crate) fn choose_prize(winner: usize, prizes: Vec<&Card>, seasons: Vec<Season>) -> usize {
     let options: Vec<String> = (0..seasons.len())
         .map(|i| {
@@ -108,16 +114,19 @@ pub(crate) fn choose_prize(winner: usize, prizes: Vec<&Card>, seasons: Vec<Seaso
         .expect("Should make a choice.")
         .index
 }
+/// Print a game over screen with the winner and winning condition
 pub(crate) fn game_over(winner_season: Season, condition: WinCondition) {
     println!("{} player wins the game with {}!", winner_season, condition);
     println!("Play again soon!");
 }
+/// Print a round over screen with the winner and winning condition
 pub(crate) fn round_over(winner_season: Season, condition: WinCondition) {
     println!(
         "{} player wins the round with {}!",
         winner_season, condition
     );
 }
+/// Wait for the next player to confirm that they are ready before proceeding
 pub(crate) fn wait_for_next_player(season: Season) {
     let message = format!("{} player, press enter to start your turn.", season);
     Confirm::new(&message)
@@ -126,6 +135,7 @@ pub(crate) fn wait_for_next_player(season: Season) {
         .expect("Cancelled");
 }
 
+/// Display a title with some fixed styling
 fn show_title(title: &str) {
     let word = format!(" {title} ");
 
@@ -133,6 +143,7 @@ fn show_title(title: &str) {
     println!("{:=^56}", word);
     println!();
 }
+/// Prompt the player to select a card from their hand
 fn select_card_from_hand(hand: &Hand) -> usize {
     show_hand(hand);
     let hand_options: Vec<String> = hand.iter().map(|c| c.to_text()).collect();
@@ -145,6 +156,8 @@ fn select_card_from_hand(hand: &Hand) -> usize {
         .position(|c| *c == card_option)
         .expect("Should be an option")
 }
+/// Prompt the player to select a field on which to play their swap card.
+/// They can press Esc to go back to the previous prompt.
 fn select_player_field(seasons: Vec<Season>, card_name: &str) -> Option<usize> {
     let message = format!("On which player's field do you wish to play {}?", card_name);
     let options: Vec<String> = seasons.iter().map(|s| format!("{}", s)).collect();
@@ -153,6 +166,8 @@ fn select_player_field(seasons: Vec<Season>, card_name: &str) -> Option<usize> {
         Err(_) => None,
     }
 }
+/// Prompt the player to select a spot on the field in which to play their card.
+/// They can press Esc to go back to the previous prompt.
 fn select_spot_on_field(field: &Field, is_swap: bool, card_name: &str) -> Option<Spot> {
     let all_spots: Vec<Spot> = (0..10usize)
         .map(|i| {
@@ -192,6 +207,7 @@ fn select_spot_on_field(field: &Field, is_swap: bool, card_name: &str) -> Option
         Err(_) => None,
     }
 }
+/// Helper function to display a row of text, one field from each of a row of cards
 fn display_row(row: &RowOfCards, f: fn(&Card) -> String) {
     for c in row {
         print!(
@@ -204,6 +220,7 @@ fn display_row(row: &RowOfCards, f: fn(&Card) -> String) {
     }
     println!("|");
 }
+/// Helper function to format the scores into one line
 fn display_scores(card: &Card) -> String {
     match (card.garden_score(), card.court_score()) {
         (Score::Value(gs), Score::Value(cs)) => format!("{gs} / {cs}"),
@@ -211,6 +228,7 @@ fn display_scores(card: &Card) -> String {
         _ => panic!("Invalid card"),
     }
 }
+/// Display all ten spots of a given field
 fn show_field(field: &Field) {
     println!("+----------+----------+----------+----------+----------+");
     display_row(&field.garden, |card| card.season().to_string());
@@ -224,6 +242,7 @@ fn show_field(field: &Field) {
     display_row(&field.court, |card| card.rune().ability().to_string());
     println!("+----------+----------+----------+----------+----------+");
 }
+/// Display up to ten cards in a hand
 fn show_hand(hand: &Hand) {
     show_title("Your  Hand");
     let row_vec: Vec<Option<Card>> = (0..5)

@@ -248,7 +248,7 @@ impl Card {
         let court_score = Score::Value(court_score);
         Self {
             season,
-            rune: Rune::Beast,
+            rune: Rune::Magician,
             garden_score,
             court_score,
         }
@@ -297,7 +297,7 @@ impl Card {
         let court_score = Score::Value(court_score);
         Self {
             season,
-            rune: Rune::Beast,
+            rune: Rune::Warrior,
             garden_score,
             court_score,
         }

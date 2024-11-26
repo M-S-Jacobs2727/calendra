@@ -268,19 +268,45 @@ fn count_points_in_row(row: &RowOfCards, card_score_fn: fn(&Card) -> Score) -> i
 mod test {
     use super::*;
 
+    fn setup_field(garden_cards: [Option<Card>; 5], court_cards: [Option<Card>; 5]) -> Field {
+        let mut field = Field::new();
+        for i in 0..5usize {
+            if let Some(card) = garden_cards[i] {
+                field.set(Some(card), Spot::new(Row::Garden, i));
+            }
+        }
+        for i in 0..5usize {
+            if let Some(card) = court_cards[i] {
+                field.set(Some(card), Spot::new(Row::Court, i));
+            }
+        }
+        field
+    }
+
     #[test]
     fn test_two_plagues_meets_win_condition() {
-        let mut field = Field::new();
-        let card = Card::create_plague(Season::Autumn);
+        let field = setup_field(
+            [
+                Some(Card::create_plague(Season::Autumn)),
+                None,
+                None,
+                None,
+                None,
+            ],
+            [
+                Some(Card::create_plague(Season::Ferric)),
+                None,
+                None,
+                None,
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Garden, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
 
-        let spot = Spot::new(Row::Court, 0);
-        field.set(Some(card.clone()), spot.clone());
-        field.set(Some(card), Spot::new(Row::Garden, 1));
-        let wc = check_win(&field, &spot, &card);
-
-        assert!(wc.is_some(), "Should be a win condition");
+        assert!(win_condition.is_some(), "Should be a win condition");
         assert!(
-            match wc.unwrap() {
+            match win_condition.unwrap() {
                 WinCondition::TwoPlagues(_) => true,
                 _ => false,
             },
@@ -290,50 +316,352 @@ mod test {
 
     #[test]
     fn test_two_countesses_gives_no_win_condition() {
-        let card1 = Card::create_countess(Season::Autumn);
-        let card2 = Card::create_countess(Season::Ferric);
-        let spot1 = Spot::new(Row::Court, 0);
-        let spot2 = Spot::new(Row::Court, 1);
-
-        let mut field = Field::new();
-        field.set(Some(card1), spot1);
-        field.set(Some(card2), spot2);
-
-        let wc = check_win(&field, &spot1, &card1);
-        assert!(wc.is_none());
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_countess(Season::Autumn)),
+                Some(Card::create_countess(Season::Ferric)),
+                None,
+                None,
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+        assert!(win_condition.is_none());
     }
 
     #[test]
     fn test_two_counts_gives_no_win_condition() {
-        let card1 = Card::create_count(Season::Autumn);
-        let card2 = Card::create_count(Season::Ferric);
-        let spot1 = Spot::new(Row::Court, 0);
-        let spot2 = Spot::new(Row::Court, 1);
-
-        let mut field = Field::new();
-        field.set(Some(card1), spot1);
-        field.set(Some(card2), spot2);
-
-        let wc = check_win(&field, &spot1, &card1);
-        assert!(wc.is_none());
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_count(Season::Autumn)),
+                Some(Card::create_count(Season::Ferric)),
+                None,
+                None,
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+        assert!(win_condition.is_none());
     }
 
     #[test]
     fn test_count_and_countess_gives_win_condition() {
-        let card1 = Card::create_count(Season::Autumn);
-        let card2 = Card::create_countess(Season::Ferric);
-        let spot1 = Spot::new(Row::Court, 0);
-        let spot2 = Spot::new(Row::Court, 1);
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_count(Season::Autumn)),
+                Some(Card::create_countess(Season::Ferric)),
+                None,
+                None,
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
 
-        let mut field = Field::new();
-        field.set(Some(card1), spot1);
-        field.set(Some(card2), spot2);
-
-        let wc = check_win(&field, &spot1, &card1);
-        assert!(wc.is_some());
-        assert!(match wc.unwrap() {
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
             WinCondition::CountCountess(_) => true,
             _ => false,
         });
+    }
+
+    #[test]
+    fn test_countess_and_ancient_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_countess(Season::Autumn)),
+                Some(Card::create_ancient(Season::Ferric)),
+                None,
+                None,
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::CountCountess(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_count_and_ancient_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_count(Season::Autumn)),
+                Some(Card::create_ancient(Season::Ferric)),
+                None,
+                None,
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::CountCountess(_) => true,
+            _ => false,
+        });
+    }
+    #[test]
+    fn test_count_and_ancient_in_different_rows_gives_no_win_condition() {
+        let field = setup_field(
+            [
+                None,
+                None,
+                None,
+                None,
+                Some(Card::create_count(Season::Autumn)),
+            ],
+            [
+                Some(Card::create_ancient(Season::Ferric)),
+                None,
+                None,
+                None,
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_none());
+    }
+
+    #[test]
+    fn test_two_ancients_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_ancient(Season::Autumn)),
+                Some(Card::create_ancient(Season::Ferric)),
+                None,
+                None,
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::CountCountess(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_three_queens_in_court_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_queen(Season::Spring, 7)),
+                None,
+                Some(Card::create_queen(Season::Spring, 5)),
+                Some(Card::create_queen(Season::Ferric, 9)),
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::ThreeInCourt(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_three_beasts_in_court_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_beast(Season::Spring, 10)),
+                None,
+                Some(Card::create_beast(Season::Spring, 12)),
+                Some(Card::create_beast(Season::Ferric, 10)),
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::ThreeInCourt(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_three_changelings_in_court_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_changeling(Season::Spring)),
+                None,
+                Some(Card::create_changeling(Season::Spring)),
+                Some(Card::create_changeling(Season::Ferric)),
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::ThreeInCourt(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_one_ancient_and_two_queens_in_court_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_queen(Season::Spring, 7)),
+                None,
+                Some(Card::create_ancient(Season::Spring)),
+                Some(Card::create_queen(Season::Ferric, 9)),
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::ThreeInCourt(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_one_ancient_and_two_beasts_in_court_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_beast(Season::Spring, 10)),
+                None,
+                Some(Card::create_beast(Season::Spring, 12)),
+                Some(Card::create_ancient(Season::Ferric)),
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::ThreeInCourt(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_one_ancient_and_two_changelings_in_court_gives_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_ancient(Season::Spring)),
+                None,
+                Some(Card::create_changeling(Season::Spring)),
+                Some(Card::create_changeling(Season::Ferric)),
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::ThreeInCourt(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_two_ancients_and_one_queen_in_court_gives_count_countess_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_queen(Season::Spring, 7)),
+                None,
+                Some(Card::create_ancient(Season::Spring)),
+                Some(Card::create_ancient(Season::Ferric)),
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 3);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::CountCountess(_) => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_fourty_points_only_mundane() {
+        let field = setup_field(
+            [
+                Some(Card::create_beast(Season::Autumn, 12)),
+                Some(Card::create_beast(Season::Winter, 12)),
+                Some(Card::create_beast(Season::Spring, 12)),
+                Some(Card::create_archer(Season::Ferric, 8)),
+                None,
+            ],
+            [None; 5],
+        );
+        let spot = Spot::new(Row::Garden, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_some());
+        assert!(match win_condition.unwrap() {
+            WinCondition::FourtyPoints => true,
+            _ => false,
+        });
+    }
+
+    #[test]
+    fn test_two_beasts_and_two_archers_in_court_give_no_win_condition() {
+        let field = setup_field(
+            [None; 5],
+            [
+                Some(Card::create_beast(Season::Autumn, 12)),
+                Some(Card::create_beast(Season::Winter, 12)),
+                Some(Card::create_archer(Season::Spring, 6)),
+                Some(Card::create_archer(Season::Ferric, 8)),
+                None,
+            ],
+        );
+        let spot = Spot::new(Row::Court, 0);
+        let win_condition = check_win(&field, &spot, field.get(spot).as_ref().unwrap());
+
+        assert!(win_condition.is_none());
+
+        let points = count_points_in_row(
+            &[
+                Some(Card::create_beast(Season::Autumn, 12)),
+                Some(Card::create_beast(Season::Winter, 12)),
+                Some(Card::create_archer(Season::Spring, 6)),
+                Some(Card::create_archer(Season::Ferric, 8)),
+                None,
+            ],
+            |c| c.court_score(),
+        );
+        assert_eq!(14, points);
     }
 }

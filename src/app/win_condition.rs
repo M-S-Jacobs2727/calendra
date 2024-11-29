@@ -1,12 +1,7 @@
 use strum_macros::Display;
 
 use super::{
-    card::{
-        ability::Ability,
-        rune::Rune,
-        score::{RowScoreModifier, Score},
-        Card,
-    },
+    card::{ability::Ability, rune::Rune, score::Score, Card},
     field::{Field, Row, RowOfCards, Spot},
     season::Season,
 };
@@ -217,51 +212,66 @@ fn check_fourty_points(field: &Field) -> bool {
 /// 3. Count the Row -1 modifiers from Mists
 /// 4. Count the Row xN modifiers from Weathers and Plagues
 fn count_points_in_row(row: &RowOfCards, card_score_fn: fn(&Card) -> Score) -> i32 {
-    let mut scores = [0; 5];
-    let num_cards = row.iter().filter(|&c| c.is_some()).count();
-    let mut total = 0;
-
-    for i in 0..5usize {
-        if let Some(c) = row[i].as_ref() {
-            if let Score::Value(v) = card_score_fn(c) {
-                scores[i] = v;
-            }
-        }
-    }
-    for i in 0..5usize {
-        if let Some(card) = row[i].as_ref() {
-            if let Score::Mod(RowScoreModifier::Add(value)) = card_score_fn(card) {
-                total += value * num_cards as i32;
-            } else if let Ability::AdjacentPlusOne = card.rune().ability() {
-                // Check card to the left, if it exists, for a value to modify
-                if i > 0 && row[i - 1].is_some_and(|c| card_score_fn(&c).is_value()) {
-                    total += 1;
-                }
-                // Check card to the right, if it exists, for a value to modify
-                if i < 4 && row[i + 1].is_some_and(|c| card_score_fn(&c).is_value()) {
-                    total += 1;
-                }
-            }
-        }
-    }
-
-    for s in scores {
-        total += s;
-    }
-
-    let multiplier = row
-        .iter()
-        .map(|card| match card {
-            Some(card) => match card_score_fn(card) {
-                Score::Mod(RowScoreModifier::Mult(value)) => value,
-                _ => 1,
-            },
-            None => 1,
+    let count_countess_locations: Vec<usize> = (0..5)
+        .filter(|i| {
+            row[*i].is_some_and(|c| match c.rune() {
+                Rune::Count | Rune::Countess => true,
+                _ => false,
+            })
         })
-        .reduce(|acc, el| acc * el)
-        .unwrap();
+        .collect();
+    let num_mists = row
+        .iter()
+        .filter(|c| {
+            c.is_some_and(|card| match card.rune() {
+                Rune::Mist => true,
+                _ => false,
+            })
+        })
+        .count();
+    let num_weathers = row
+        .iter()
+        .filter(|c| {
+            c.is_some_and(|card| match card.rune() {
+                Rune::Weather => true,
+                _ => false,
+            })
+        })
+        .count();
+    let num_plagues = row
+        .iter()
+        .filter(|c| {
+            c.is_some_and(|card| match card.rune() {
+                Rune::Plague => true,
+                _ => false,
+            })
+        })
+        .count();
 
-    total * multiplier
+    row.iter()
+        .enumerate()
+        .map(|(i, possible_card)| {
+            if let Some(card) = possible_card {
+                if let Score::Value(mut value) = card_score_fn(card) {
+                    value -= num_mists as i32;
+                    if count_countess_locations.contains(&(i + 1)) {
+                        value += 1;
+                    }
+                    if count_countess_locations.contains(&(i - 1)) {
+                        value += 1;
+                    }
+                    if card.rune().ability() != Ability::NoWeather && num_weathers > 0 {
+                        value *= num_weathers as i32;
+                    }
+                    if card.rune().ability() != Ability::AntiPlague && num_plagues > 0 {
+                        value = 0;
+                    }
+                    return value;
+                }
+            }
+            0
+        })
+        .sum()
 }
 
 #[cfg(test)]

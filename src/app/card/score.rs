@@ -5,14 +5,7 @@ pub(crate) enum Score {
     Value(i32),
     Mod(RowScoreModifier),
 }
-impl Score {
-    pub(crate) fn is_value(&self) -> bool {
-        match self {
-            Score::Value(_) => true,
-            _ => false,
-        }
-    }
-}
+
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(crate) enum RowScoreModifier {
     Mult(i32),

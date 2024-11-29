@@ -1,6 +1,6 @@
 use strum_macros::Display;
 
-#[derive(Display)]
+#[derive(Display, PartialEq)]
 pub(crate) enum Ability {
     /// Can act as a Queen, Beast, Changeling, Count, or Countess to win with the
     /// CountCountess or ThreeInTheCourt win conditions

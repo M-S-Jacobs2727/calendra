@@ -53,8 +53,9 @@ pub(crate) fn select_play(player_turn: usize, players: &Vec<Player>) -> Play {
                 let player_field = select_player_field(seasons.clone(), &card_name);
                 match player_field {
                     Some(idx) => 'spot1: loop {
+                        let card_to_play = &hand[card_index];
                         let opt_spot =
-                            select_spot_on_field(players[idx].field(), is_swap, &card_name);
+                            select_spot_on_field(players[idx].field(), is_swap, card_to_play);
                         match opt_spot {
                             Some(spot) => {
                                 return Play {
@@ -72,8 +73,9 @@ pub(crate) fn select_play(player_turn: usize, players: &Vec<Player>) -> Play {
             }
         } else {
             'spot2: loop {
+                let card_to_play = &hand[card_index];
                 let opt_spot =
-                    select_spot_on_field(players[player_turn].field(), is_swap, &card_name);
+                    select_spot_on_field(players[player_turn].field(), is_swap, card_to_play);
                 match opt_spot {
                     Some(spot) => {
                         return Play {
@@ -168,7 +170,7 @@ fn select_player_field(seasons: Vec<Season>, card_name: &str) -> Option<usize> {
 }
 /// Prompt the player to select a spot on the field in which to play their card.
 /// They can press Esc to go back to the previous prompt.
-fn select_spot_on_field(field: &Field, is_swap: bool, card_name: &str) -> Option<Spot> {
+fn select_spot_on_field(field: &Field, is_swap: bool, card_to_play: &Card) -> Option<Spot> {
     let all_spots: Vec<Spot> = (0..10usize)
         .map(|i| {
             let row = if i < 5 { Row::Garden } else { Row::Court };
@@ -179,7 +181,17 @@ fn select_spot_on_field(field: &Field, is_swap: bool, card_name: &str) -> Option
     let spot_options: Vec<(Spot, String)> = if is_swap {
         all_spots
             .iter()
-            .filter_map(|spot| field.get(*spot).and_then(|c| Some((*spot, c.to_text()))))
+            .filter_map(|spot| {
+                if let Some(card) = field.get(*spot) {
+                    if card_to_play.can_swap_with(card) {
+                        Some((*spot, card.to_text()))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
             .collect()
     } else {
         all_spots
@@ -198,9 +210,9 @@ fn select_spot_on_field(field: &Field, is_swap: bool, card_name: &str) -> Option
 
     show_field(field);
     let message = if is_swap {
-        format!("Which card will you swap with {}?", card_name)
+        format!("Which card will you swap with {}?", card_to_play)
     } else {
-        format!("Where will you play {}?", card_name)
+        format!("Where will you play {}?", card_to_play)
     };
     match Select::new(&message, spot_options).raw_prompt() {
         Ok(res) => Some(spots[res.index]),

@@ -331,6 +331,17 @@ impl Card {
             self.season, self.rune, self.garden_score, self.court_score
         )
     }
+
+    pub(crate) fn can_swap_with(&self, card: &Card) -> bool {
+        match (self.rune, card.rune.ability()) {
+            (Rune::Mist, _) => true,
+            (Rune::Changeling, Ability::AntiSwap) => false,
+            (Rune::Changeling, _) => true,
+            (Rune::Plague, Ability::AntiSwap | Ability::AntiPlague) => false,
+            (Rune::Plague, _) => true,
+            (_, _) => false,
+        }
+    }
 }
 impl Display for Card {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -52,13 +52,13 @@ pub(crate) fn check_win(field: &Field, spot: &Spot, card: &Card) -> Option<WinCo
 /// House rule: Two ancients in the court, one in season and the other Ferric,
 /// counts as a game win
 pub(crate) fn check_two_ancients_house_rule(
-    row: &RowOfCards,
+    court: &RowOfCards,
     condition: &WinCondition,
     season: Season,
 ) -> bool {
     if let WinCondition::CountCountess([spot1, spot2]) = condition {
-        let c1 = row[spot1.place()].expect("Should be a card here");
-        let c2 = row[spot2.place()].expect("Should be a card here");
+        let c1 = court[spot1.place()].expect("Should be a card here");
+        let c2 = court[spot2.place()].expect("Should be a card here");
         if c1.rune() == Rune::Ancient
             && c2.rune() == Rune::Ancient
             && ((c1.season() == Season::Ferric && c2.season() == season)

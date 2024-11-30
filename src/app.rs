@@ -53,6 +53,9 @@ impl App {
             win_state.condition,
         );
     }
+    fn num_players(&self) -> usize {
+        self.players.len()
+    }
     /// The main game loop that runs over multiple rounds
     fn game_loop(&mut self) -> WinState {
         let mut first_player = 0usize;
@@ -131,19 +134,18 @@ impl App {
     /// to play it, and a win condition is checked based on the card that was played
     /// for the player whose field the card was played in.
     fn play_round(&mut self, first_player: usize) -> WinState {
-        let num_players = self.players.len();
-        assert!(first_player < num_players);
-        let mut player_turn = first_player;
+        assert!(first_player < self.num_players());
+        let mut player_index = first_player;
 
         self.initialize_round();
         loop {
-            let turn = self.player_takes_turn(player_turn);
+            let turn = self.player_takes_turn(player_index);
             self.execute_turn(&turn);
 
             if let Some(win_state) = self.check_for_win_conditions(&turn) {
                 return win_state;
             }
-            player_turn = (player_turn + 1) % num_players;
+            player_index = (player_index + 1) % self.num_players();
         }
     }
     fn player_takes_turn(&self, player_index: usize) -> Turn {
@@ -154,7 +156,7 @@ impl App {
             .iter()
             .cycle()
             .skip(player_index)
-            .take(self.players.len())
+            .take(self.num_players())
             .collect();
         let fields: Vec<&Field> = players_starting_with_self
             .iter()
@@ -203,42 +205,43 @@ impl App {
     /// in the correct location
     fn execute_turn(&mut self, turn: &Turn) {
         let card = self.players[turn.player_index].take_card_from_hand(turn.card_index_in_hand);
-        let other_card = self.players[turn.field_index].play_card(card, turn.spot_on_field);
-        if let Some(c) = other_card {
-            self.players[turn.player_index].add_card_to_hand(c);
+        let possible_other_card =
+            self.players[turn.field_index].play_card(card, turn.spot_on_field);
+        if let Some(other_card) = possible_other_card {
+            self.players[turn.player_index].add_card_to_hand(other_card);
         }
     }
     /// Check first for a game-winning condition, then for a round-winning condition
     fn check_for_win_conditions(&self, turn: &Turn) -> Option<WinState> {
-        let player = &self.players[turn.field_index];
-        let player_idx = turn.field_index;
+        let field_index = turn.field_index;
+        let player_played_on = &self.players[field_index];
+        let field = player_played_on.field();
         let spot = turn.spot_on_field;
-        let card = player
-            .field()
-            .get(turn.spot_on_field)
+        let player_season = player_played_on.season();
+        let card = field
+            .get(spot)
             .as_ref()
-            .expect("Should be a card here from excuting play");
+            .expect("Should be a card here from excuting turn");
 
-        if card.season() == player.season() {
-            let field_in_season = player.field().clone_in_season(player.season());
+        if card.season() == player_season {
+            let field_in_season = field.clone_in_season(player_season);
 
             // If there is a win condition on the in-season field, then it is a game win
             let opt_win_cond = check_win(&field_in_season, &spot, card);
             if let Some(condition) = opt_win_cond {
                 return Some(WinState {
-                    player_index: player_idx,
+                    player_index: field_index,
                     game_won: true,
                     condition,
                 });
             }
         }
 
-        let opt_win_cond = check_win(player.field(), &spot, card);
+        let opt_win_cond = check_win(field, &spot, card);
         if let Some(condition) = opt_win_cond {
-            let game_won =
-                check_two_ancients_house_rule(&player.field().court, &condition, player.season());
+            let game_won = check_two_ancients_house_rule(&field.court, &condition, player_season);
             Some(WinState {
-                player_index: player_idx,
+                player_index: field_index,
                 game_won,
                 condition,
             })

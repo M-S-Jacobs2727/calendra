@@ -345,10 +345,11 @@ impl Card {
 }
 impl Display for Card {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        format!(
-            "{}\n{}\n{}\n{}",
-            self.season, self.rune, self.garden_score, self.court_score
-        )
-        .fmt(f)
+        match (self.garden_score, self.court_score) {
+            (Score::Value(gs), Score::Value(cs)) => {
+                format!("{}\n{}\n{}\n{}", self.season, self.rune, gs, cs).fmt(f)
+            }
+            _ => format!("{}\n{}", self.season, self.rune).fmt(f),
+        }
     }
 }

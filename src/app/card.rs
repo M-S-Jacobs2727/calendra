@@ -332,8 +332,8 @@ impl Card {
         )
     }
 
-    pub(crate) fn can_swap_with(&self, card: &Card) -> bool {
-        match (self.rune, card.rune.ability()) {
+    pub(crate) fn can_swap_with(&self, other_card: &Card) -> bool {
+        match (self.rune, other_card.rune.ability()) {
             (Rune::Mist, _) => true,
             (Rune::Changeling, Ability::AntiSwap) => false,
             (Rune::Changeling, _) => true,

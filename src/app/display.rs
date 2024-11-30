@@ -1,24 +1,13 @@
 use std::str;
 
-use inquire::{Confirm, Select};
+use inquire::{Confirm, InquireError, Select};
 
 use super::{
     card::{score::Score, Card},
-    field::{Field, Row, RowOfCards, Spot},
-    player::{Hand, Player},
+    field::{Field, RowOfCards, Spot},
     season::Season,
     win_condition::WinCondition,
 };
-// TODO: account for pressing Esc on prompts where it does nothing
-// just loop until a choice is taken
-
-// TODO: sort cards by season
-pub(super) struct Play {
-    pub player_turn: usize,
-    pub played_field: usize,
-    pub card_index: usize,
-    pub spot: Spot,
-}
 
 /// Prompt the user for a 2, 3, or 4-player game
 pub(crate) fn get_num_players() -> i32 {
@@ -29,68 +18,78 @@ pub(crate) fn get_num_players() -> i32 {
         }
     }
 }
-/// Select the card to play and the location in which to play it
-pub(crate) fn select_play(player_turn: usize, players: &Vec<Player>) -> Play {
-    let seasons: Vec<Season> = players.iter().map(|p| p.season()).collect();
-    for i in 0..players.len() {
-        if i == player_turn {
-            continue;
-        }
-        show_title(players[i].season().to_string().as_str());
-        show_field(players[i].field());
+
+pub(crate) fn show_all_fields(fields: &[&Field]) {
+    for field in fields {
+        show_field(field);
     }
-    show_title("Your Field");
-    show_field(players[player_turn].field());
-
-    let hand = players[player_turn].hand();
-
+}
+/// Prompt the player to select a card from their hand
+pub(crate) fn get_card_choice_from_hand(hand: &[Card]) -> usize {
+    show_hand(hand);
+    let hand_options: Vec<String> = hand.iter().map(|c| c.to_text()).collect();
+    let message = "Select a card from your hand";
     loop {
-        let card_index = select_card_from_hand(hand);
-        let card_name = hand[card_index].to_text();
-        let is_swap = hand[card_index].rune().ability().is_swap();
-        if is_swap {
-            'field: loop {
-                let player_field = select_player_field(seasons.clone(), &card_name);
-                match player_field {
-                    Some(idx) => 'spot1: loop {
-                        let card_to_play = &hand[card_index];
-                        let opt_spot =
-                            select_spot_on_field(players[idx].field(), is_swap, card_to_play);
-                        match opt_spot {
-                            Some(spot) => {
-                                return Play {
-                                    played_field: idx,
-                                    player_turn,
-                                    card_index,
-                                    spot,
-                                }
-                            }
-                            None => break 'spot1,
-                        }
-                    },
-                    None => break 'field,
-                }
-            }
-        } else {
-            'spot2: loop {
-                let card_to_play = &hand[card_index];
-                let opt_spot =
-                    select_spot_on_field(players[player_turn].field(), is_swap, card_to_play);
-                match opt_spot {
-                    Some(spot) => {
-                        return Play {
-                            played_field: player_turn,
-                            player_turn,
-                            card_index,
-                            spot,
-                        }
-                    }
-                    None => break 'spot2,
-                }
-            }
+        match Select::new(message, hand_options.clone()).raw_prompt() {
+            Ok(selected_option) => return selected_option.index,
+            Err(InquireError::OperationCanceled) => {}
+            Err(e) => panic!("{:?}", e),
         }
     }
 }
+pub(crate) fn select_spot_to_play_card(
+    selected_card: &Card,
+    valid_spots: &Vec<Spot>,
+) -> Option<Spot> {
+    let message = format!("Select a spot to play your {}", selected_card);
+
+    match Select::new(&message, valid_spots.clone()).raw_prompt() {
+        Ok(selected_spot) => Some(valid_spots[selected_spot.index]),
+        Err(InquireError::OperationCanceled) => None,
+        Err(_) => panic!(""),
+    }
+}
+
+pub(crate) fn select_spot_to_swap_card(
+    selected_card: &Card,
+    valid_spots: Vec<Vec<Spot>>,
+    fields: &Vec<&Field>,
+    seasons: Vec<Season>,
+) -> Option<(usize, Spot)> {
+    let field_message = format!("Select a field to play your {} on", selected_card);
+    let spot_message = format!("Select a card to swap with your {}", selected_card);
+    let available_field_indices: Vec<usize> = (0..valid_spots.len())
+        .filter(|i| valid_spots[*i].len() != 0)
+        .collect();
+    let season_options: Vec<Season> = available_field_indices
+        .iter()
+        .map(|i| seasons[*i])
+        .collect();
+
+    loop {
+        let field_index = match Select::new(&field_message, season_options.clone()).raw_prompt() {
+            Ok(selected_season) => selected_season.index,
+            Err(InquireError::OperationCanceled) => return None,
+            Err(_) => panic!("Encountered error"),
+        };
+        let options: Vec<&Card> = valid_spots[field_index]
+            .iter()
+            .map(|spot| {
+                fields[field_index]
+                    .get(*spot)
+                    .as_ref()
+                    .expect("Should only contain cards")
+            })
+            .collect();
+        let spot_index = match Select::new(&spot_message, options).raw_prompt() {
+            Ok(selected_spot) => selected_spot.index,
+            Err(InquireError::OperationCanceled) => continue,
+            Err(_) => panic!("Encountered error"),
+        };
+        return Some((field_index, valid_spots[field_index][spot_index]));
+    }
+}
+
 /// Prompt the winner of a round to choose from the prizes available
 pub(crate) fn choose_prize(winner: usize, prizes: Vec<&Card>, seasons: Vec<Season>) -> usize {
     let options: Vec<String> = (0..seasons.len())
@@ -145,80 +144,6 @@ fn show_title(title: &str) {
     println!("{:=^56}", word);
     println!();
 }
-/// Prompt the player to select a card from their hand
-fn select_card_from_hand(hand: &Hand) -> usize {
-    show_hand(hand);
-    let hand_options: Vec<String> = hand.iter().map(|c| c.to_text()).collect();
-    let message = "Select a card from your hand";
-    let card_option = Select::new(message, hand_options.clone())
-        .prompt()
-        .expect("Should be a selection");
-    hand_options
-        .iter()
-        .position(|c| *c == card_option)
-        .expect("Should be an option")
-}
-/// Prompt the player to select a field on which to play their swap card.
-/// They can press Esc to go back to the previous prompt.
-fn select_player_field(seasons: Vec<Season>, card_name: &str) -> Option<usize> {
-    let message = format!("On which player's field do you wish to play {}?", card_name);
-    let options: Vec<String> = seasons.iter().map(|s| format!("{}", s)).collect();
-    match Select::new(&message, options).raw_prompt() {
-        Ok(res) => Some(res.index),
-        Err(_) => None,
-    }
-}
-/// Prompt the player to select a spot on the field in which to play their card.
-/// They can press Esc to go back to the previous prompt.
-fn select_spot_on_field(field: &Field, is_swap: bool, card_to_play: &Card) -> Option<Spot> {
-    let all_spots: Vec<Spot> = (0..10usize)
-        .map(|i| {
-            let row = if i < 5 { Row::Garden } else { Row::Court };
-            Spot::new(row, i % 5)
-        })
-        .collect();
-
-    let spot_options: Vec<(Spot, String)> = if is_swap {
-        all_spots
-            .iter()
-            .filter_map(|spot| {
-                if let Some(card) = field.get(*spot) {
-                    if card_to_play.can_swap_with(card) {
-                        Some((*spot, card.to_text()))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
-    } else {
-        all_spots
-            .iter()
-            .filter_map(|spot| {
-                if field.get(*spot).is_none() {
-                    Some((*spot, format!("{}", spot)))
-                } else {
-                    None
-                }
-            })
-            .collect()
-    };
-    let spots: Vec<Spot> = spot_options.iter().map(|so| so.0.clone()).collect();
-    let spot_options: Vec<String> = spot_options.iter().map(|so| so.1.clone()).collect();
-
-    show_field(field);
-    let message = if is_swap {
-        format!("Which card will you swap with {}?", card_to_play)
-    } else {
-        format!("Where will you play {}?", card_to_play)
-    };
-    match Select::new(&message, spot_options).raw_prompt() {
-        Ok(res) => Some(spots[res.index]),
-        Err(_) => None,
-    }
-}
 /// Helper function to display a row of text, one field from each of a row of cards
 fn display_row(row: &RowOfCards, f: fn(&Card) -> String) {
     for c in row {
@@ -255,7 +180,7 @@ fn show_field(field: &Field) {
     println!("+----------+----------+----------+----------+----------+");
 }
 /// Display up to ten cards in a hand
-fn show_hand(hand: &Hand) {
+fn show_hand(hand: &[Card]) {
     show_title("Your  Hand");
     let row_vec: Vec<Option<Card>> = (0..5)
         .map(|i| if i < hand.len() { Some(hand[i]) } else { None })

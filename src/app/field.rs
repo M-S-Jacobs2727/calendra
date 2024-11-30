@@ -48,6 +48,32 @@ impl Field {
         }
         field_in_season
     }
+    pub(super) fn iter<'a>(&'a self) -> FieldIter<'a> {
+        FieldIter::new(self)
+    }
+}
+
+pub(super) struct FieldIter<'a> {
+    index: usize,
+    field: &'a Field,
+}
+impl<'a> FieldIter<'a> {
+    fn new(field: &'a Field) -> Self {
+        Self { index: 0, field }
+    }
+}
+impl<'a> Iterator for FieldIter<'a> {
+    type Item = Option<Card>;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.index += 1;
+        if self.index <= 5 {
+            Some(self.field.garden[self.index - 1])
+        } else if self.index <= 10 {
+            Some(self.field.court[self.index - 6])
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Clone, Copy, Display, PartialEq, Debug)]
@@ -78,6 +104,15 @@ impl Spot {
     }
     pub(crate) fn row(&self) -> &Row {
         &self.row
+    }
+    pub(crate) fn from_index(index: usize) -> Self {
+        if index >= 10 {
+            panic!("Index should be less than 10, found {}", index);
+        }
+        Self {
+            row: if index < 5 { Row::Garden } else { Row::Court },
+            place: index % 5,
+        }
     }
 }
 impl Display for Spot {

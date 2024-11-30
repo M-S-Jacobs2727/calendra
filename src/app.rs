@@ -3,12 +3,14 @@ mod display;
 mod field;
 mod player;
 mod season;
+mod turn;
 mod win_condition;
 
 use card::{all_cards, Card};
-use display::Play;
+use field::{Field, Spot};
 use player::Player;
 use season::Season;
+use turn::Turn;
 use win_condition::{check_two_ancients_house_rule, check_win, WinCondition};
 
 use rand::prelude::*;
@@ -135,14 +137,58 @@ impl App {
 
         self.initialize_round();
         loop {
-            display::wait_for_next_player(self.players[player_turn].season());
-            let play = display::select_play(player_turn, &self.players);
-            self.execute_play(&play);
+            let turn = self.player_takes_turn(player_turn);
+            self.execute_turn(&turn);
 
-            if let Some(win_state) = self.check_for_win_conditions(&play) {
+            if let Some(win_state) = self.check_for_win_conditions(&turn) {
                 return win_state;
             }
             player_turn = (player_turn + 1) % num_players;
+        }
+    }
+    fn player_takes_turn(&self, player_index: usize) -> Turn {
+        display::wait_for_next_player(self.players[player_index].season());
+
+        let players_starting_with_self: Vec<&Player> = self
+            .players
+            .iter()
+            .cycle()
+            .skip(player_index)
+            .take(self.players.len())
+            .collect();
+        let fields: Vec<&Field> = players_starting_with_self
+            .iter()
+            .map(|p| p.field())
+            .collect();
+        let seasons: Vec<Season> = players_starting_with_self
+            .iter()
+            .map(|p| p.season())
+            .collect();
+        let hand = players_starting_with_self[0].hand();
+        display::show_all_fields(&fields);
+        loop {
+            let card_index_in_hand: usize = display::get_card_choice_from_hand(hand);
+            let selected_card = &hand[card_index_in_hand];
+            let valid_spots = turn::get_valid_spots_from_card(player_index, selected_card, &fields);
+            let possible_spot: Option<(usize, Spot)> = if selected_card.rune().ability().is_swap() {
+                display::select_spot_to_swap_card(
+                    selected_card,
+                    valid_spots,
+                    &fields,
+                    seasons.clone(),
+                )
+            } else {
+                display::select_spot_to_play_card(selected_card, &valid_spots[0])
+                    .map(|spot| (0, spot))
+            };
+            if let Some((field_index, spot_on_field)) = possible_spot {
+                return Turn {
+                    player_index,
+                    field_index,
+                    card_index_in_hand,
+                    spot_on_field,
+                };
+            }
         }
     }
     /// Players draw their hands up to 10 cards and flip the top card
@@ -155,21 +201,21 @@ impl App {
     }
     /// Perform the play, removing the card from the player's hand and playing it
     /// in the correct location
-    fn execute_play(&mut self, play: &Play) {
-        let card = self.players[play.player_turn].take_card_from_hand(play.card_index);
-        let other_card = self.players[play.played_field].play_card(card, play.spot);
+    fn execute_turn(&mut self, turn: &Turn) {
+        let card = self.players[turn.player_index].take_card_from_hand(turn.card_index_in_hand);
+        let other_card = self.players[turn.field_index].play_card(card, turn.spot_on_field);
         if let Some(c) = other_card {
-            self.players[play.player_turn].add_card_to_hand(c);
+            self.players[turn.player_index].add_card_to_hand(c);
         }
     }
     /// Check first for a game-winning condition, then for a round-winning condition
-    fn check_for_win_conditions(&self, play: &Play) -> Option<WinState> {
-        let player = &self.players[play.played_field];
-        let player_idx = play.played_field;
-        let spot = play.spot;
+    fn check_for_win_conditions(&self, turn: &Turn) -> Option<WinState> {
+        let player = &self.players[turn.field_index];
+        let player_idx = turn.field_index;
+        let spot = turn.spot_on_field;
         let card = player
             .field()
-            .get(play.spot)
+            .get(turn.spot_on_field)
             .as_ref()
             .expect("Should be a card here from excuting play");
 
